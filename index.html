@@ -225,14 +225,22 @@
             
             if (savedStateStr) {
                 try {
-                    tempArray = JSON.parse(savedStateStr);
-                    console.log("Przywrócono zapisany postęp agenta: " + currentNick);
-                    // Odtworzenie statystyk bazując na wczytanej tablicy
-                    stats.correct = 0; stats.wrong = 0; stats.mastered = 0;
-                    tempArray.forEach(q => {
-                        if (q.currentMastery >= q.requiredMastery) stats.mastered++;
-                        stats.correct += q.currentMastery; // Przybliżenie, jeśli chce bardziej dokładne to musiałby zapisywać oddzielnie
-                    });
+                    const parsed = JSON.parse(savedStateStr);
+                    if (parsed.stats && parsed.data) {
+                        // Zapis w nowym precyzyjnym formacie
+                        tempArray = parsed.data;
+                        stats = parsed.stats;
+                        console.log("Przywrócono zapisany postęp agenta (wraz z dokładnymi statystykami): " + currentNick);
+                    } else {
+                        // Stary format (fallback)
+                        tempArray = parsed;
+                        console.log("Przywrócono zapisany postęp agenta ze starego zapisu: " + currentNick);
+                        stats.correct = 0; stats.wrong = 0; stats.mastered = 0;
+                        tempArray.forEach(q => {
+                            if (q.currentMastery >= q.requiredMastery) stats.mastered++;
+                            stats.correct += q.currentMastery;
+                        });
+                    }
                 } catch(e) {
                     console.error("Błąd ładowania progresu", e);
                 }
@@ -473,9 +481,10 @@
                     q.requiredMastery++;
                 }
 
-                // Zapis lokalnego postępu
+                // Zapis lokalnego postępu i dokładnych statystyk
                 const storageKey = `chts_progress_${currentNick}_${currentDB}`;
-                localStorage.setItem(storageKey, JSON.stringify(quizData));
+                const payload = { data: quizData, stats: stats };
+                localStorage.setItem(storageKey, JSON.stringify(payload));
             }
 
             document.getElementById('stat-correct').innerText = stats.correct;
