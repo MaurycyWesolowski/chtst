@@ -308,6 +308,7 @@ async function processZipBlob(fileOrBlob) {
     if (parsed && typeof parsed === 'object' && parsed.stats !== undefined && parsed.data !== undefined) {
         tempArray = parsed.data;
         stats = parsed.stats;
+        shuffle(tempArray); // Zapewnia brak monotonii! Losuje pozostale po restarcie.
         console.log("Przywrócono zapisany postęp z CHMURY dla bazy: " + currentDB);
     } else {
         // Jeśli nie ma w chmurze, inicjuj na nowo
@@ -484,12 +485,12 @@ function check() {
         input.disabled = true;
         if (!isPerfect) {
             input.className = isPawelMode 
-                ? "w-full p-5 rounded-lg font-bold transition-all bg-fuchsia-900/20 border-2 border-fuchsia-500 text-fuchsia-500"
+                ? "w-full p-5 rounded-lg font-bold transition-all bg-red-900/20 border-2 border-red-500 text-red-500 shadow-[0_0_15px_rgba(239,68,68,0.2)]"
                 : "w-full p-5 rounded-lg font-bold transition-all bg-red-900/20 border-2 border-red-500 text-red-500";
             messageArea.innerText = `ODPOWIEDŹ: ${q.options[0]}`;
         } else {
             input.className = isPawelMode
-                ? "w-full p-5 rounded-lg font-bold transition-all bg-cyan-900/20 border-2 border-cyan-400 text-cyan-400"
+                ? "w-full p-5 rounded-lg font-bold transition-all bg-fuchsia-900/20 border-2 border-fuchsia-500 text-fuchsia-500 shadow-[0_0_15px_rgba(217,70,239,0.2)]"
                 : "w-full p-5 rounded-lg font-bold transition-all bg-green-900/20 border-2 border-green-500 text-green-500";
         }
     } else if (q.type === 'LUKI') {
@@ -512,10 +513,10 @@ function check() {
             
             sel.classList.remove('border-orange');
             if (expected && userVal === expected) {
-                sel.classList.add(isPawelMode ? 'bg-cyan-900/40' : 'bg-green-900/40', isPawelMode ? 'border-cyan-400' : 'border-green-500', isPawelMode ? 'text-cyan-400' : 'text-green-500');
+                sel.classList.add(isPawelMode ? 'bg-fuchsia-900/40' : 'bg-green-900/40', isPawelMode ? 'border-fuchsia-500' : 'border-green-500', isPawelMode ? 'text-fuchsia-500' : 'text-green-500');
             } else {
                 isPerfect = false;
-                sel.classList.add(isPawelMode ? 'bg-fuchsia-900/40' : 'bg-red-900/40', isPawelMode ? 'border-fuchsia-500' : 'border-red-500', isPawelMode ? 'text-fuchsia-500' : 'text-red-500');
+                sel.classList.add(isPawelMode ? 'bg-red-900/40' : 'bg-red-900/40', isPawelMode ? 'border-red-500' : 'border-red-500', isPawelMode ? 'text-red-500' : 'text-red-500');
                 sel.outerHTML += `<span class="${isPawelMode ? 'text-cyan-400' : 'text-green-500'} text-xs ml-1 font-black block mt-1 mb-2">[Poprawna: ${expected || 'Brak danych'}]</span>`;
             }
         });
@@ -529,15 +530,15 @@ function check() {
 
             if (isCorrect && isSelected) {
                 btn.className = isPawelMode 
-                    ? "option-btn w-full text-left p-5 rounded-lg border-2 border-cyan-400 bg-cyan-900/20 text-cyan-400 font-black shadow-[0_0_15px_rgba(34,211,238,0.2)]"
+                    ? "option-btn w-full text-left p-5 rounded-lg border-2 border-fuchsia-500 bg-fuchsia-900/20 text-fuchsia-500 font-black shadow-[0_0_15px_rgba(217,70,239,0.2)]"
                     : "option-btn w-full text-left p-5 rounded-lg border-2 border-green-500 bg-green-900/20 text-green-500 font-black";
             } else if (isCorrect && !isSelected) {
                 btn.className = isPawelMode
-                    ? "option-btn w-full text-left p-5 rounded-lg border-2 border-lime-400 bg-lime-900/20 text-lime-400 font-black shadow-[0_0_15px_rgba(163,230,53,0.2)]"
+                    ? "option-btn w-full text-left p-5 rounded-lg border-2 border-cyan-400 bg-cyan-900/20 text-cyan-400 font-black shadow-[0_0_15px_rgba(34,211,238,0.2)]"
                     : "option-btn w-full text-left p-5 rounded-lg border-2 border-yellow-500 bg-yellow-900/20 text-yellow-500 font-black";
             } else if (!isCorrect && isSelected) {
                 btn.className = isPawelMode
-                    ? "option-btn w-full text-left p-5 rounded-lg border-2 border-fuchsia-500 bg-fuchsia-900/20 text-fuchsia-500 font-black shadow-[0_0_15px_rgba(217,70,239,0.2)]"
+                    ? "option-btn w-full text-left p-5 rounded-lg border-2 border-red-500 bg-red-900/20 text-red-500 font-black shadow-[0_0_15px_rgba(239,68,68,0.2)]"
                     : "option-btn w-full text-left p-5 rounded-lg border-2 border-red-500 bg-red-900/20 text-red-500 font-black";
             }
         });
@@ -556,14 +557,14 @@ function processLogic(correct) {
             q.currentMastery++;
             if (q.currentMastery === 2 && q.totalErrors === 0) {
                 messageArea.innerText = "ALE LEKKIE ⚡";
-                messageArea.className = `mb-4 text-center h-4 text-[10px] font-black uppercase tracking-widest ${isPawelMode ? 'text-cyan-400' : 'text-green-500'}`;
+                messageArea.className = `mb-4 text-center h-4 text-[10px] font-black uppercase tracking-widest ${isPawelMode ? 'text-fuchsia-500' : 'text-green-500'}`;
             }
             if (q.currentMastery >= q.requiredMastery) stats.mastered++;
         } else {
             stats.wrong++;
             if (q.currentMastery === 1) {
                 messageArea.innerText = "SYZYF 🪨";
-                messageArea.className = `mb-4 text-center h-4 text-[10px] font-black uppercase tracking-widest ${isPawelMode ? 'text-fuchsia-500' : 'text-red-500'}`;
+                messageArea.className = `mb-4 text-center h-4 text-[10px] font-black uppercase tracking-widest ${isPawelMode ? 'text-red-500' : 'text-red-500'}`;
             }
             q.totalErrors++;
             q.currentMastery = 0;
