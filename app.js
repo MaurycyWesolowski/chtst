@@ -1,6 +1,6 @@
 import { auth, db } from './firebase-config.js';
-import { createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut, updateProfile } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-auth.js";
-import { ref, set, get, child } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-database.js";
+import { GoogleAuthProvider, signInWithPopup, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut, updateProfile } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-auth.js";
+import { ref, set, get, child, remove } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-database.js";
 
 // Core App State
 let quizData = [];
@@ -11,6 +11,7 @@ let isAnswered = false;
 
 let currentUser = null;
 let currentDB = "local";
+let isPawelMode = localStorage.getItem('pawelMode') === 'true';
 
 // HTML Elements
 const actionBtn = document.getElementById('action-btn');
@@ -68,6 +69,22 @@ document.getElementById('auth-action-btn').addEventListener('click', async () =>
     }
 });
 
+document.getElementById('auth-google-btn').addEventListener('click', async () => {
+    const provider = new GoogleAuthProvider();
+    const msg = document.getElementById('auth-msg');
+    msg.className = "mt-4 text-xs font-bold text-orange min-h-4 tracking-wider";
+    msg.innerText = "Logowanie do chmury Google...";
+    try {
+        await signInWithPopup(auth, provider);
+        msg.innerText = "Zalogowano Google pomyślnie!";
+        msg.className = "mt-4 text-xs font-bold text-green-500 min-h-4 tracking-wider";
+    } catch (err) {
+        console.error(err);
+        msg.innerText = "Błąd Google: " + err.message;
+        msg.className = "mt-4 text-xs font-bold text-red-500 min-h-4 tracking-wider";
+    }
+});
+
 // Listen for Authentication state changes
 onAuthStateChanged(auth, (user) => {
     document.getElementById('auth-action-btn').disabled = false;
@@ -94,6 +111,33 @@ onAuthStateChanged(auth, (user) => {
 // Wylogowanie
 document.getElementById('nav-logout-btn').addEventListener('click', () => signOut(auth));
 document.getElementById('lobby-logout-btn').addEventListener('click', () => signOut(auth));
+
+// Reset i Pawel Mode
+document.getElementById('nav-reset-btn').addEventListener('click', async () => {
+    if(!currentUser || !currentDB || currentDB === 'local') return;
+    if(confirm("Czy na pewno chcesz zresetować CZYSTO DO ZERA cały swój postęp (" + currentDB + ") w chmurze?\nTej akcji nie da się cofnąć!")) {
+        try {
+            await remove(ref(db, `users/${currentUser.uid}/progress/${currentDB}`));
+            alert("Baza wyszorowana z sukcesem! Zaczniesz z czystym kontem.");
+            location.reload();
+        } catch (err) {
+            alert("Błąd: " + err.message);
+        }
+    }
+});
+
+const pawelBtn = document.getElementById('pawel-mode-btn');
+function updatePawelUI() {
+    pawelBtn.classList.toggle('border-blue-500', isPawelMode);
+    pawelBtn.classList.toggle('bg-blue-900/20', isPawelMode);
+    pawelBtn.classList.toggle('border-zinc-800', !isPawelMode);
+}
+pawelBtn.addEventListener('click', () => {
+    isPawelMode = !isPawelMode;
+    localStorage.setItem('pawelMode', isPawelMode);
+    updatePawelUI();
+});
+updatePawelUI(); // Init
 
 // Dekonstrukcja Bazy Ograniczonej z Githuba
 document.getElementById('login-btn').addEventListener('click', async () => {
@@ -382,10 +426,14 @@ function check() {
         isPerfect = userVal === expectedVal;
         input.disabled = true;
         if (!isPerfect) {
-            input.classList.add('bg-red-900/20', 'border-red-500', 'text-red-500');
+            input.className = isPawelMode 
+                ? "w-full p-5 rounded-2xl font-bold transition-all bg-yellow-900/20 border-2 border-yellow-500 text-yellow-500"
+                : "w-full p-5 rounded-2xl font-bold transition-all bg-red-900/20 border-2 border-red-500 text-red-500";
             messageArea.innerText = `ODPOWIEDŹ: ${q.options[0]}`;
         } else {
-            input.classList.add('bg-green-900/20', 'border-green-500', 'text-green-500');
+            input.className = isPawelMode
+                ? "w-full p-5 rounded-2xl font-bold transition-all bg-blue-900/20 border-2 border-blue-500 text-blue-500"
+                : "w-full p-5 rounded-2xl font-bold transition-all bg-green-900/20 border-2 border-green-500 text-green-500";
         }
     } else if (q.type === 'LUKI') {
         isPerfect = true;
@@ -407,11 +455,11 @@ function check() {
             
             sel.classList.remove('border-orange');
             if (expected && userVal === expected) {
-                sel.classList.add('bg-green-900/40', 'border-green-500', 'text-green-500');
+                sel.classList.add(isPawelMode ? 'bg-blue-900/40' : 'bg-green-900/40', isPawelMode ? 'border-blue-500' : 'border-green-500', isPawelMode ? 'text-blue-500' : 'text-green-500');
             } else {
                 isPerfect = false;
-                sel.classList.add('bg-red-900/40', 'border-red-500', 'text-red-500');
-                sel.outerHTML += `<span class="text-green-500 text-xs ml-1 font-black block mt-1 mb-2">[Poprawna: ${expected || 'Brak danych'}]</span>`;
+                sel.classList.add(isPawelMode ? 'bg-yellow-900/40' : 'bg-red-900/40', isPawelMode ? 'border-yellow-500' : 'border-red-500', isPawelMode ? 'text-yellow-500' : 'text-red-500');
+                sel.outerHTML += `<span class="${isPawelMode ? 'text-blue-500' : 'text-green-500'} text-xs ml-1 font-black block mt-1 mb-2">[Poprawna: ${expected || 'Brak danych'}]</span>`;
             }
         });
     } else {
@@ -423,11 +471,15 @@ function check() {
             const isSelected = selectedIndices.includes(i);
 
             if (isCorrect && isSelected) {
-                btn.className = "option-btn w-full text-left p-5 rounded-2xl border-2 border-green-500 bg-green-900/20 text-green-500 font-black";
+                btn.className = isPawelMode 
+                    ? "option-btn w-full text-left p-5 rounded-2xl border-2 border-blue-500 bg-blue-900/20 text-blue-500 font-black"
+                    : "option-btn w-full text-left p-5 rounded-2xl border-2 border-green-500 bg-green-900/20 text-green-500 font-black";
             } else if (isCorrect && !isSelected) {
                 btn.className = "option-btn w-full text-left p-5 rounded-2xl border-2 border-orange-500 bg-orange-900/20 text-orange-500 font-black";
             } else if (!isCorrect && isSelected) {
-                btn.className = "option-btn w-full text-left p-5 rounded-2xl border-2 border-red-500 bg-red-900/20 text-red-500 font-black";
+                btn.className = isPawelMode
+                    ? "option-btn w-full text-left p-5 rounded-2xl border-2 border-yellow-500 bg-yellow-900/20 text-yellow-500 font-black"
+                    : "option-btn w-full text-left p-5 rounded-2xl border-2 border-red-500 bg-red-900/20 text-red-500 font-black";
             }
         });
     }
@@ -445,14 +497,14 @@ function processLogic(correct) {
             q.currentMastery++;
             if (q.currentMastery === 2 && q.totalErrors === 0) {
                 messageArea.innerText = "ALE LEKKIE ⚡";
-                messageArea.className = "mb-4 text-center h-4 text-[10px] font-black uppercase tracking-widest text-green-500";
+                messageArea.className = `mb-4 text-center h-4 text-[10px] font-black uppercase tracking-widest ${isPawelMode ? 'text-blue-500' : 'text-green-500'}`;
             }
             if (q.currentMastery >= q.requiredMastery) stats.mastered++;
         } else {
             stats.wrong++;
             if (q.currentMastery === 1) {
                 messageArea.innerText = "SYZYF 🪨";
-                messageArea.className = "mb-4 text-center h-4 text-[10px] font-black uppercase tracking-widest text-red-500";
+                messageArea.className = `mb-4 text-center h-4 text-[10px] font-black uppercase tracking-widest ${isPawelMode ? 'text-yellow-500' : 'text-red-500'}`;
             }
             q.totalErrors++;
             q.currentMastery = 0;
