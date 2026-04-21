@@ -205,7 +205,7 @@ document.getElementById('login-btn').addEventListener('click', async () => {
             if (!fallbackZip.ok) throw new Error("Błąd: Nie odnaleziono bazy o tym haśle/nazwie (Brak pliku na serwerze)!");
             
             const blob = await fallbackZip.blob();
-            currentDB = pass;
+            currentDB = hashHex || pass.replace(/[.#$\[\]]/g, '_');
             await processZipBlob(blob);
         } else {
             const encryptedBuffer = await response.arrayBuffer();
@@ -232,7 +232,7 @@ document.getElementById('login-btn').addEventListener('click', async () => {
 
             const decryptedBlob = new Blob([decryptedBuffer], { type: "application/zip" });
 
-            currentDB = pass;
+            currentDB = hashHex || pass.replace(/[.#$\[\]]/g, '_');
             await processZipBlob(decryptedBlob);
         }
 
@@ -306,7 +306,7 @@ async function processZipBlob(fileOrBlob) {
     let tempArray = [];
     
     if (parsed && typeof parsed === 'object' && parsed.stats !== undefined && parsed.data !== undefined) {
-        tempArray = parsed.data;
+        tempArray = Array.isArray(parsed.data) ? parsed.data : Object.values(parsed.data);
         stats = parsed.stats;
         shuffle(tempArray); // Zapewnia brak monotonii! Losuje pozostale po restarcie.
         console.log("Przywrócono zapisany postęp z CHMURY dla bazy: " + currentDB);
