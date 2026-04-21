@@ -134,7 +134,7 @@ async function fetchLibrary() {
                         <span class="text-2xl opacity-60 group-hover:opacity-100 transition-all">📚</span>
                         <span class="font-bold text-sm text-zinc-300 group-hover:text-orange transition-all">${info.name || "Baza " + count}</span>
                     </div>
-                    <span class="text-[10px] text-zinc-600 uppercase font-black tracking-widest group-hover:text-orange transition-all">Graj ➡️</span>
+                    <span class="text-sm uppercase font-black group-hover:text-orange transition-all">➡️</span>
                 `;
                 btn.onclick = () => {
                     document.getElementById('pass-input').value = info.password;
@@ -166,8 +166,10 @@ document.getElementById('nav-reset-btn').addEventListener('click', async () => {
 
 const pawelBtn = document.getElementById('pawel-mode-btn');
 function updatePawelUI() {
-    pawelBtn.classList.toggle('border-pink-500', isPawelMode);
-    pawelBtn.classList.toggle('bg-pink-900/20', isPawelMode);
+    pawelBtn.classList.toggle('border-cyan-400', isPawelMode);
+    pawelBtn.classList.toggle('bg-cyan-900/20', isPawelMode);
+    pawelBtn.classList.toggle('text-cyan-400', isPawelMode);
+    pawelBtn.classList.toggle('text-zinc-500', !isPawelMode);
     pawelBtn.classList.toggle('border-zinc-800', !isPawelMode);
 }
 pawelBtn.addEventListener('click', () => {
@@ -482,12 +484,12 @@ function check() {
         input.disabled = true;
         if (!isPerfect) {
             input.className = isPawelMode 
-                ? "w-full p-5 rounded-2xl font-bold transition-all bg-purple-900/20 border-2 border-purple-500 text-purple-500"
+                ? "w-full p-5 rounded-2xl font-bold transition-all bg-fuchsia-900/20 border-2 border-fuchsia-500 text-fuchsia-500"
                 : "w-full p-5 rounded-2xl font-bold transition-all bg-red-900/20 border-2 border-red-500 text-red-500";
             messageArea.innerText = `ODPOWIEDŹ: ${q.options[0]}`;
         } else {
             input.className = isPawelMode
-                ? "w-full p-5 rounded-2xl font-bold transition-all bg-pink-900/20 border-2 border-pink-500 text-pink-500"
+                ? "w-full p-5 rounded-2xl font-bold transition-all bg-cyan-900/20 border-2 border-cyan-400 text-cyan-400"
                 : "w-full p-5 rounded-2xl font-bold transition-all bg-green-900/20 border-2 border-green-500 text-green-500";
         }
     } else if (q.type === 'LUKI') {
@@ -510,11 +512,11 @@ function check() {
             
             sel.classList.remove('border-orange');
             if (expected && userVal === expected) {
-                sel.classList.add(isPawelMode ? 'bg-pink-900/40' : 'bg-green-900/40', isPawelMode ? 'border-pink-500' : 'border-green-500', isPawelMode ? 'text-pink-500' : 'text-green-500');
+                sel.classList.add(isPawelMode ? 'bg-cyan-900/40' : 'bg-green-900/40', isPawelMode ? 'border-cyan-400' : 'border-green-500', isPawelMode ? 'text-cyan-400' : 'text-green-500');
             } else {
                 isPerfect = false;
-                sel.classList.add(isPawelMode ? 'bg-purple-900/40' : 'bg-red-900/40', isPawelMode ? 'border-purple-500' : 'border-red-500', isPawelMode ? 'text-purple-500' : 'text-red-500');
-                sel.outerHTML += `<span class="${isPawelMode ? 'text-pink-500' : 'text-green-500'} text-xs ml-1 font-black block mt-1 mb-2">[Poprawna: ${expected || 'Brak danych'}]</span>`;
+                sel.classList.add(isPawelMode ? 'bg-fuchsia-900/40' : 'bg-red-900/40', isPawelMode ? 'border-fuchsia-500' : 'border-red-500', isPawelMode ? 'text-fuchsia-500' : 'text-red-500');
+                sel.outerHTML += `<span class="${isPawelMode ? 'text-cyan-400' : 'text-green-500'} text-xs ml-1 font-black block mt-1 mb-2">[Poprawna: ${expected || 'Brak danych'}]</span>`;
             }
         });
     } else {
@@ -527,15 +529,15 @@ function check() {
 
             if (isCorrect && isSelected) {
                 btn.className = isPawelMode 
-                    ? "option-btn w-full text-left p-5 rounded-2xl border-2 border-pink-500 bg-pink-900/20 text-pink-500 font-black"
+                    ? "option-btn w-full text-left p-5 rounded-2xl border-2 border-cyan-400 bg-cyan-900/20 text-cyan-400 font-black shadow-[0_0_15px_rgba(34,211,238,0.2)]"
                     : "option-btn w-full text-left p-5 rounded-2xl border-2 border-green-500 bg-green-900/20 text-green-500 font-black";
             } else if (isCorrect && !isSelected) {
                 btn.className = isPawelMode
-                    ? "option-btn w-full text-left p-5 rounded-2xl border-2 border-teal-500 bg-teal-900/20 text-teal-500 font-black"
+                    ? "option-btn w-full text-left p-5 rounded-2xl border-2 border-lime-400 bg-lime-900/20 text-lime-400 font-black shadow-[0_0_15px_rgba(163,230,53,0.2)]"
                     : "option-btn w-full text-left p-5 rounded-2xl border-2 border-yellow-500 bg-yellow-900/20 text-yellow-500 font-black";
             } else if (!isCorrect && isSelected) {
                 btn.className = isPawelMode
-                    ? "option-btn w-full text-left p-5 rounded-2xl border-2 border-purple-500 bg-purple-900/20 text-purple-500 font-black"
+                    ? "option-btn w-full text-left p-5 rounded-2xl border-2 border-fuchsia-500 bg-fuchsia-900/20 text-fuchsia-500 font-black shadow-[0_0_15px_rgba(217,70,239,0.2)]"
                     : "option-btn w-full text-left p-5 rounded-2xl border-2 border-red-500 bg-red-900/20 text-red-500 font-black";
             }
         });
@@ -554,14 +556,14 @@ function processLogic(correct) {
             q.currentMastery++;
             if (q.currentMastery === 2 && q.totalErrors === 0) {
                 messageArea.innerText = "ALE LEKKIE ⚡";
-                messageArea.className = `mb-4 text-center h-4 text-[10px] font-black uppercase tracking-widest ${isPawelMode ? 'text-pink-500' : 'text-green-500'}`;
+                messageArea.className = `mb-4 text-center h-4 text-[10px] font-black uppercase tracking-widest ${isPawelMode ? 'text-cyan-400' : 'text-green-500'}`;
             }
             if (q.currentMastery >= q.requiredMastery) stats.mastered++;
         } else {
             stats.wrong++;
             if (q.currentMastery === 1) {
                 messageArea.innerText = "SYZYF 🪨";
-                messageArea.className = `mb-4 text-center h-4 text-[10px] font-black uppercase tracking-widest ${isPawelMode ? 'text-purple-500' : 'text-red-500'}`;
+                messageArea.className = `mb-4 text-center h-4 text-[10px] font-black uppercase tracking-widest ${isPawelMode ? 'text-fuchsia-500' : 'text-red-500'}`;
             }
             q.totalErrors++;
             q.currentMastery = 0;
