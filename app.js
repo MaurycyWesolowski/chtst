@@ -128,7 +128,7 @@ async function fetchLibrary() {
             for (let [dbKey, info] of Object.entries(data)) {
                 count++;
                 const btn = document.createElement('button');
-                btn.className = "flex items-center justify-between w-full bg-zinc-900/40 border border-zinc-800 p-4 rounded-2xl hover:border-orange transition-all group hover:bg-zinc-800 text-left cursor-pointer";
+                btn.className = "flex items-center justify-between w-full bg-zinc-900/40 border border-zinc-800 p-4 rounded-xl hover:border-orange transition-all group hover:bg-zinc-800 text-left cursor-pointer";
                 btn.innerHTML = `
                     <div class="flex items-center gap-3">
                         <span class="text-2xl opacity-60 group-hover:opacity-100 transition-all">📚</span>
@@ -375,7 +375,7 @@ function render() {
     selectedIndices = [];
     messageArea.innerText = "";
     actionBtn.innerText = "Sprawdź";
-    actionBtn.className = "w-full bg-orange text-black py-5 rounded-2xl font-black uppercase text-sm shadow-lg transition-all active:scale-95";
+    actionBtn.className = "w-full bg-orange text-black py-5 rounded-md font-black uppercase text-sm shadow-lg transition-all active:scale-95";
     
     document.getElementById('question-text').innerText = q.content;
     document.getElementById('type-tag').innerText = q.type;
@@ -429,7 +429,7 @@ function render() {
         grid.classList.remove('hidden');
         q.options.forEach((opt, i) => {
             const btn = document.createElement('button');
-            btn.className = "option-btn w-full text-left p-5 rounded-2xl border border-zinc-900 bg-zinc-900/30 text-xs font-bold transition-all";
+            btn.className = "option-btn w-full text-left p-5 rounded-lg border border-zinc-900 bg-zinc-900/30 text-xs font-bold transition-all";
             btn.innerText = opt;
             btn.onclick = () => handleSelect(i, btn);
             grid.appendChild(btn);
@@ -484,13 +484,13 @@ function check() {
         input.disabled = true;
         if (!isPerfect) {
             input.className = isPawelMode 
-                ? "w-full p-5 rounded-2xl font-bold transition-all bg-fuchsia-900/20 border-2 border-fuchsia-500 text-fuchsia-500"
-                : "w-full p-5 rounded-2xl font-bold transition-all bg-red-900/20 border-2 border-red-500 text-red-500";
+                ? "w-full p-5 rounded-lg font-bold transition-all bg-fuchsia-900/20 border-2 border-fuchsia-500 text-fuchsia-500"
+                : "w-full p-5 rounded-lg font-bold transition-all bg-red-900/20 border-2 border-red-500 text-red-500";
             messageArea.innerText = `ODPOWIEDŹ: ${q.options[0]}`;
         } else {
             input.className = isPawelMode
-                ? "w-full p-5 rounded-2xl font-bold transition-all bg-cyan-900/20 border-2 border-cyan-400 text-cyan-400"
-                : "w-full p-5 rounded-2xl font-bold transition-all bg-green-900/20 border-2 border-green-500 text-green-500";
+                ? "w-full p-5 rounded-lg font-bold transition-all bg-cyan-900/20 border-2 border-cyan-400 text-cyan-400"
+                : "w-full p-5 rounded-lg font-bold transition-all bg-green-900/20 border-2 border-green-500 text-green-500";
         }
     } else if (q.type === 'LUKI') {
         isPerfect = true;
@@ -529,23 +529,23 @@ function check() {
 
             if (isCorrect && isSelected) {
                 btn.className = isPawelMode 
-                    ? "option-btn w-full text-left p-5 rounded-2xl border-2 border-cyan-400 bg-cyan-900/20 text-cyan-400 font-black shadow-[0_0_15px_rgba(34,211,238,0.2)]"
-                    : "option-btn w-full text-left p-5 rounded-2xl border-2 border-green-500 bg-green-900/20 text-green-500 font-black";
+                    ? "option-btn w-full text-left p-5 rounded-lg border-2 border-cyan-400 bg-cyan-900/20 text-cyan-400 font-black shadow-[0_0_15px_rgba(34,211,238,0.2)]"
+                    : "option-btn w-full text-left p-5 rounded-lg border-2 border-green-500 bg-green-900/20 text-green-500 font-black";
             } else if (isCorrect && !isSelected) {
                 btn.className = isPawelMode
-                    ? "option-btn w-full text-left p-5 rounded-2xl border-2 border-lime-400 bg-lime-900/20 text-lime-400 font-black shadow-[0_0_15px_rgba(163,230,53,0.2)]"
-                    : "option-btn w-full text-left p-5 rounded-2xl border-2 border-yellow-500 bg-yellow-900/20 text-yellow-500 font-black";
+                    ? "option-btn w-full text-left p-5 rounded-lg border-2 border-lime-400 bg-lime-900/20 text-lime-400 font-black shadow-[0_0_15px_rgba(163,230,53,0.2)]"
+                    : "option-btn w-full text-left p-5 rounded-lg border-2 border-yellow-500 bg-yellow-900/20 text-yellow-500 font-black";
             } else if (!isCorrect && isSelected) {
                 btn.className = isPawelMode
-                    ? "option-btn w-full text-left p-5 rounded-2xl border-2 border-fuchsia-500 bg-fuchsia-900/20 text-fuchsia-500 font-black shadow-[0_0_15px_rgba(217,70,239,0.2)]"
-                    : "option-btn w-full text-left p-5 rounded-2xl border-2 border-red-500 bg-red-900/20 text-red-500 font-black";
+                    ? "option-btn w-full text-left p-5 rounded-lg border-2 border-fuchsia-500 bg-fuchsia-900/20 text-fuchsia-500 font-black shadow-[0_0_15px_rgba(217,70,239,0.2)]"
+                    : "option-btn w-full text-left p-5 rounded-lg border-2 border-red-500 bg-red-900/20 text-red-500 font-black";
             }
         });
     }
 
     processLogic(isPerfect);
     actionBtn.innerText = "Następny ➡️";
-    actionBtn.className = "w-full bg-zinc-100 text-black py-5 rounded-2xl font-black uppercase text-sm shadow-xl active:scale-95 transition-all";
+    actionBtn.className = "w-full bg-zinc-100 text-black py-5 rounded-md font-black uppercase text-sm shadow-xl active:scale-95 transition-all";
 }
 
 function processLogic(correct) {
