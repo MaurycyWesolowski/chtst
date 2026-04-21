@@ -94,6 +94,7 @@ onAuthStateChanged(auth, (user) => {
         uploadScreen.classList.remove('hidden');
         lobbyNav.classList.remove('hidden');
         document.getElementById('auth-msg').innerText = "";
+        fetchLibrary();
     } else {
         currentUser = null;
         // Wylogowany lub odświeżono bez sesji
@@ -111,6 +112,43 @@ onAuthStateChanged(auth, (user) => {
 // Wylogowanie
 document.getElementById('nav-logout-btn').addEventListener('click', () => signOut(auth));
 document.getElementById('lobby-logout-btn').addEventListener('click', () => signOut(auth));
+
+async function fetchLibrary() {
+    if (!currentUser) return;
+    try {
+        const snap = await get(child(ref(db), `users/${currentUser.uid}/unlockedBases`));
+        const libSection = document.getElementById('library-section');
+        const libGrid = document.getElementById('library-grid');
+        libGrid.innerHTML = '';
+        
+        if (snap.exists() && Object.keys(snap.val()).length > 0) {
+            libSection.classList.remove('hidden');
+            const data = snap.val();
+            let count = 0;
+            for (let [dbKey, info] of Object.entries(data)) {
+                count++;
+                const btn = document.createElement('button');
+                btn.className = "flex items-center justify-between w-full bg-zinc-900/40 border border-zinc-800 p-4 rounded-2xl hover:border-orange transition-all group hover:bg-zinc-800 text-left cursor-pointer";
+                btn.innerHTML = `
+                    <div class="flex items-center gap-3">
+                        <span class="text-2xl opacity-60 group-hover:opacity-100 transition-all">📚</span>
+                        <span class="font-bold text-sm text-zinc-300 group-hover:text-orange transition-all">${info.name || "Baza " + count}</span>
+                    </div>
+                    <span class="text-[10px] text-zinc-600 uppercase font-black tracking-widest group-hover:text-orange transition-all">Graj ➡️</span>
+                `;
+                btn.onclick = () => {
+                    document.getElementById('pass-input').value = info.password;
+                    document.getElementById('login-btn').click();
+                };
+                libGrid.appendChild(btn);
+            }
+        } else {
+            libSection.classList.add('hidden');
+        }
+    } catch (e) {
+        console.error("Library fetch error", e);
+    }
+}
 
 // Reset i Pawel Mode
 document.getElementById('nav-reset-btn').addEventListener('click', async () => {
@@ -199,6 +237,23 @@ document.getElementById('login-btn').addEventListener('click', async () => {
         status.innerText = "Udało się! Inicjowanie środowiska...";
         status.className = "mt-4 text-xs font-bold text-green-500 min-h-4 tracking-wider";
         document.getElementById('login-btn').disabled = false;
+
+        const safeKey = hashHex || pass.replace(/[.#$\[\]]/g, '_');
+        const libRef = child(ref(db), `users/${currentUser.uid}/unlockedBases/${safeKey}`);
+        const snap = await get(libRef);
+        if (!snap.exists()) {
+            setTimeout(() => {
+                let customName = prompt(`🔐 Baza pomyślnie odblokowana!\nNadaj dumną nazwę dla tej skrytki by zapisała się w Twojej Bibliotece w chmurze:`, `Prywatna Baza`);
+                if (customName) {
+                    set(libRef, {
+                        name: customName,
+                        password: pass,
+                        timestamp: Date.now()
+                    }).then(() => fetchLibrary());
+                }
+            }, 500);
+        }
+
     } catch (err) {
         console.error(err);
         if (err.name === "OperationError") {

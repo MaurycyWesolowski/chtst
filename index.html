@@ -73,15 +73,29 @@
             <!-- EKRAN ODBLOKOWYWANIA BAZY -->
             <div id="upload-screen" class="hidden text-center py-8">
                 <div class="text-6xl mb-8 opacity-20">📂</div>
-                <h2 class="text-xl font-bold mb-6 uppercase tracking-widest text-zinc-400 italic">ODBLOKUJ BAZĘ PYTAŃ</h2>
-                
-                <input type="password" id="pass-input" placeholder="Wpisz hasło ukrytej bazy pytań..." autocomplete="off"
-                       class="w-full p-4 mb-4 rounded-xl bg-zinc-900 border border-zinc-800 text-white font-bold outline-none focus:border-orange transition-all placeholder:text-sm text-center">
 
-                <button id="login-btn" class="block w-full border-2 bg-orange border-orange text-black py-4 rounded-xl font-black text-sm cursor-pointer hover:bg-orange-600 transition-all uppercase shadow-lg disabled:opacity-50 mt-4">
-                    Pozyskaj z serwera i Rozpocznij 🚀
-                </button>
-                <p id="auth-status" class="mt-4 text-xs font-bold text-red-500 min-h-4 tracking-wider"></p>
+                <!-- BIBLIOTEKA BAZ (Pamięć w chmurze) -->
+                <div id="library-section" class="mb-10 hidden">
+                    <h2 class="text-xl font-bold mb-4 uppercase tracking-widest text-zinc-400 italic flex items-center justify-center gap-2">
+                        <span class="text-orange">TWOJA</span> BIBLIOTEKA
+                    </h2>
+                    <div id="library-grid" class="flex flex-col gap-3">
+                        <!-- JS Wstrzykuje tutaj kafelki baz -->
+                    </div>
+                </div>
+
+                <!-- ODBLOKUJ NOWĄ BAZĘ -->
+                <div id="unlock-new-section" class="border-t border-zinc-800 pt-8">
+                    <h2 class="text-sm font-bold mb-4 uppercase tracking-widest text-zinc-500 italic">ODBLOKUJ NOWĄ BAZĘ</h2>
+                    
+                    <input type="password" id="pass-input" placeholder="Wpisz hasło ukrytej bazy pytań..." autocomplete="off"
+                           class="w-full p-4 mb-4 rounded-xl bg-zinc-900 border border-zinc-800 text-white font-bold outline-none focus:border-orange transition-all placeholder:text-sm text-center">
+
+                    <button id="login-btn" class="block w-full border-2 bg-orange border-orange text-black py-4 rounded-xl font-black text-sm cursor-pointer hover:bg-orange-600 transition-all uppercase shadow-lg disabled:opacity-50 mt-4">
+                        Pozyskaj z serwera i Rozpocznij 🚀
+                    </button>
+                    <p id="auth-status" class="mt-4 text-xs font-bold text-red-500 min-h-4 tracking-wider"></p>
+                </div>
 
                 <div class="mt-8 border-t border-zinc-800 pt-6">
                     <p class="text-[10px] text-zinc-600 uppercase font-black mb-3 tracking-widest">Opcja Awaryjna (Brak Sieci)</p>
