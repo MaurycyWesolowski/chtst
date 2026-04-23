@@ -60,9 +60,9 @@ document.getElementById('auth-action-btn').addEventListener('click', async () =>
         msg.className = "mt-4 text-xs font-bold text-green-500 min-h-4 tracking-wider";
     } catch (err) {
         console.error(err);
-        if(err.code === 'auth/invalid-email') msg.innerText = "Zły format adresu e-mail.";
-        else if(err.code === 'auth/invalid-credential') msg.innerText = "Błędny email lub hasło.";
-        else if(err.code === 'auth/email-already-in-use') msg.innerText = "Taki adres email jest w użyciu!";
+        if (err.code === 'auth/invalid-email') msg.innerText = "Zły format adresu e-mail.";
+        else if (err.code === 'auth/invalid-credential') msg.innerText = "Błędny email lub hasło.";
+        else if (err.code === 'auth/email-already-in-use') msg.innerText = "Taki adres email jest w użyciu!";
         else msg.innerText = "Błąd: " + err.message;
         msg.className = "mt-4 text-xs font-bold text-red-500 min-h-4 tracking-wider";
         document.getElementById('auth-action-btn').disabled = false;
@@ -120,7 +120,7 @@ async function fetchLibrary() {
         const libSection = document.getElementById('library-section');
         const libGrid = document.getElementById('library-grid');
         libGrid.innerHTML = '';
-        
+
         if (snap.exists() && Object.keys(snap.val()).length > 0) {
             libSection.classList.remove('hidden');
             const data = snap.val();
@@ -152,8 +152,8 @@ async function fetchLibrary() {
 
 // Reset i Pawel Mode
 document.getElementById('nav-reset-btn').addEventListener('click', async () => {
-    if(!currentUser || !currentDB || currentDB === 'local') return;
-    if(confirm("Czy na pewno chcesz zresetować CZYSTO DO ZERA cały swój postęp (" + currentDB + ") w chmurze?\nTej akcji nie da się cofnąć!")) {
+    if (!currentUser || !currentDB || currentDB === 'local') return;
+    if (confirm("Czy na pewno chcesz zresetować CZYSTO DO ZERA cały swój postęp (" + currentDB + ") w chmurze?\nTej akcji nie da się cofnąć!")) {
         try {
             await remove(ref(db, `users/${currentUser.uid}/progress/${currentDB}`));
             alert("Baza wyszorowana z sukcesem! Zaczniesz z czystym kontem.");
@@ -203,16 +203,16 @@ document.getElementById('login-btn').addEventListener('click', async () => {
         if (!response.ok) {
             const fallbackZip = await fetch(`${pass}.zip`);
             if (!fallbackZip.ok) throw new Error("Błąd: Nie odnaleziono bazy o tym haśle/nazwie (Brak pliku na serwerze)!");
-            
+
             const blob = await fallbackZip.blob();
             currentDB = hashHex || pass.replace(/[.#$\[\]]/g, '_');
             await processZipBlob(blob);
         } else {
             const encryptedBuffer = await response.arrayBuffer();
             const encryptedData = new Uint8Array(encryptedBuffer);
-            
+
             if (encryptedData.length < 28) throw new Error("Plik jest uszkodzony.");
-            
+
             const salt = encryptedData.slice(0, 16);
             const iv = encryptedData.slice(16, 28);
             const payload = encryptedData.slice(28);
@@ -300,11 +300,11 @@ async function loadProgressFromCloud() {
 async function processZipBlob(fileOrBlob) {
     const zip = await JSZip.loadAsync(fileOrBlob);
     const files = Object.keys(zip.files).filter(n => n.endsWith('.txt'));
-    
+
     // Odczyt po migracji na chmurę zamiast localStorage
     const parsed = await loadProgressFromCloud();
     let tempArray = [];
-    
+
     if (parsed && typeof parsed === 'object' && parsed.stats !== undefined && parsed.data !== undefined) {
         tempArray = Array.isArray(parsed.data) ? parsed.data : Object.values(parsed.data);
         stats = parsed.stats;
@@ -332,7 +332,7 @@ async function processZipBlob(fileOrBlob) {
     while (currentIndex < quizData.length && quizData[currentIndex].currentMastery >= quizData[currentIndex].requiredMastery && stats.mastered < quizData.length) {
         currentIndex++;
     }
-    if (currentIndex >= quizData.length) currentIndex = 0; 
+    if (currentIndex >= quizData.length) currentIndex = 0;
 
     // Przełączanie Okiem
     document.getElementById('upload-screen').classList.add('hidden');
@@ -340,19 +340,19 @@ async function processZipBlob(fileOrBlob) {
     document.getElementById('quiz-ui').classList.remove('hidden');
     document.getElementById('question-screen').classList.remove('hidden');
     document.getElementById('nav-controls').classList.remove('hidden');
-    
+
     // Info panel
     const oldWelcome = document.getElementById('welcome-msg');
     if (oldWelcome) oldWelcome.remove();
-    
+
     const n = currentUser?.displayName || currentUser?.email || "Gość";
     const welcomeDiv = document.createElement('div');
     welcomeDiv.id = "welcome-msg";
     welcomeDiv.className = "text-center mb-6 text-xs text-zinc-500 font-bold uppercase tracking-widest";
     welcomeDiv.innerHTML = `🎓 STUDENT: <span class="text-orange">${n}</span>`;
     document.getElementById('main-card').insertBefore(welcomeDiv, document.getElementById('question-screen'));
-    
-    processLogic(null); 
+
+    processLogic(null);
     render();
 }
 
@@ -364,7 +364,7 @@ function parseV3(text) {
         content: lines.find(l => l.startsWith('PYTANIE:'))?.replace('PYTANIE: ', ''),
         options: lines.slice(lines.indexOf('TRESC:') + 1),
         correctIndices: lines[0].substring(1).split('').map((v, i) => v === '1' ? i : null).filter(v => v !== null),
-        lukiAnswers: lines.includes('LUKI_ANSWERS:') 
+        lukiAnswers: lines.includes('LUKI_ANSWERS:')
             ? lines.slice(lines.indexOf('LUKI_ANSWERS:') + 1, lines.indexOf('TRESC:'))
             : []
     };
@@ -377,14 +377,14 @@ function render() {
     messageArea.innerText = "";
     actionBtn.innerText = "Sprawdź";
     actionBtn.className = "w-full bg-orange text-black py-5 rounded-md font-black uppercase text-sm shadow-lg transition-all active:scale-95";
-    
+
     document.getElementById('question-text').innerText = q.content;
     document.getElementById('type-tag').innerText = q.type;
     document.getElementById('question-nr').innerText = `ID: ${q.nr}`;
-    
+
     const dots = document.getElementById('mastery-dots');
     dots.innerHTML = '';
-    for(let i=0; i<q.requiredMastery; i++) {
+    for (let i = 0; i < q.requiredMastery; i++) {
         const d = document.createElement('div');
         d.className = `w-1.5 h-1.5 rounded-full ${i < q.currentMastery ? 'bg-orange shadow-[0_0_5px_#FF6B00]' : 'bg-zinc-800'}`;
         dots.appendChild(d);
@@ -411,7 +411,7 @@ function render() {
             foundMarkers = true;
             return `<select id="luka-${p1}" class="luka-select p-2 mx-1 mt-2 rounded bg-zinc-900 border border-orange text-white font-bold outline-none focus:border-green-500 transition-all text-[0.85rem] appearance-none cursor-pointer">${optionsHTML}</select>`;
         });
-        
+
         if (!foundMarkers && q.lukiAnswers && q.lukiAnswers.length > 0) {
             modifiedContent += `<div class="mt-6 flex flex-col gap-3">`;
             q.lukiAnswers.forEach(ans => {
@@ -424,7 +424,7 @@ function render() {
             });
             modifiedContent += `</div>`;
         }
-        
+
         document.getElementById('question-text').innerHTML = modifiedContent;
     } else {
         grid.classList.remove('hidden');
@@ -436,7 +436,7 @@ function render() {
             grid.appendChild(btn);
         });
     }
-    
+
     actionBtn.onclick = () => {
         if (!isAnswered) check();
         else changeQuestion(1);
@@ -461,9 +461,9 @@ function check() {
     const q = quizData[currentIndex];
     const isLuki = q.type === 'LUKI';
     const lukiSelects = isLuki ? document.querySelectorAll('.luka-select') : [];
-    
+
     if (q.type !== 'OPEN' && !isLuki && selectedIndices.length === 0) return;
-    
+
     if (isLuki) {
         let allAnswered = true;
         lukiSelects.forEach(s => { if (!s.value) allAnswered = false; });
@@ -473,7 +473,7 @@ function check() {
             return;
         }
     }
-    
+
     isAnswered = true;
     let isPerfect = false;
 
@@ -484,7 +484,7 @@ function check() {
         isPerfect = userVal === expectedVal;
         input.disabled = true;
         if (!isPerfect) {
-            input.className = isPawelMode 
+            input.className = isPawelMode
                 ? "w-full p-5 rounded-lg font-bold transition-all bg-red-900/20 border-2 border-red-500 text-red-500 shadow-[0_0_15px_rgba(239,68,68,0.2)]"
                 : "w-full p-5 rounded-lg font-bold transition-all bg-red-900/20 border-2 border-red-500 text-red-500";
             messageArea.innerText = `ODPOWIEDŹ: ${q.options[0]}`;
@@ -510,7 +510,7 @@ function check() {
             let id = sel.id.replace('luka-', '');
             let expected = correctMap[id];
             let userVal = sel.value.trim().toLowerCase();
-            
+
             sel.classList.remove('border-orange');
             if (expected && userVal === expected) {
                 sel.classList.add(isPawelMode ? 'bg-fuchsia-900/40' : 'bg-green-900/40', isPawelMode ? 'border-fuchsia-500' : 'border-green-500', isPawelMode ? 'text-fuchsia-500' : 'text-green-500');
@@ -522,14 +522,14 @@ function check() {
         });
     } else {
         isPerfect = JSON.stringify(selectedIndices.sort()) === JSON.stringify(q.correctIndices.sort());
-        
+
         document.querySelectorAll('.option-btn').forEach((btn, i) => {
             btn.disabled = true;
             const isCorrect = q.correctIndices.includes(i);
             const isSelected = selectedIndices.includes(i);
 
             if (isCorrect && isSelected) {
-                btn.className = isPawelMode 
+                btn.className = isPawelMode
                     ? "option-btn w-full text-left p-5 rounded-lg border-2 border-fuchsia-500 bg-fuchsia-900/20 text-fuchsia-500 font-black shadow-[0_0_15px_rgba(217,70,239,0.2)]"
                     : "option-btn w-full text-left p-5 rounded-lg border-2 border-green-500 bg-green-900/20 text-green-500 font-black";
             } else if (isCorrect && !isSelected) {
@@ -551,7 +551,7 @@ function check() {
 
 function processLogic(correct) {
     const q = quizData[currentIndex];
-    if (correct !== null) { 
+    if (correct !== null) {
         if (correct) {
             stats.correct++;
             q.currentMastery++;
