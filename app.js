@@ -15,6 +15,7 @@ let isPawelMode = localStorage.getItem('pawelMode') === 'true';
 
 // HTML Elements
 const actionBtn = document.getElementById('action-btn');
+const skipBtn = document.getElementById('skip-btn');
 const messageArea = document.getElementById('message-area');
 
 // Auth Form Logic
@@ -376,7 +377,8 @@ function render() {
     selectedIndices = [];
     messageArea.innerText = "";
     actionBtn.innerText = "Sprawdź";
-    actionBtn.className = "w-full bg-orange text-black py-5 rounded-md font-black uppercase text-sm shadow-lg transition-all active:scale-95";
+    actionBtn.className = "w-2/3 bg-orange text-black py-4 rounded-md font-black uppercase text-sm shadow-lg transition-all active:scale-95";
+    skipBtn.classList.remove('hidden');
 
     document.getElementById('question-text').innerText = q.content;
     document.getElementById('type-tag').innerText = q.type;
@@ -438,8 +440,12 @@ function render() {
     }
 
     actionBtn.onclick = () => {
-        if (!isAnswered) check();
+        if (!isAnswered) check(false);
         else changeQuestion(1);
+    };
+
+    skipBtn.onclick = () => {
+        if (!isAnswered) check(true);
     };
 }
 
@@ -457,31 +463,37 @@ function handleSelect(idx, btn) {
     }
 }
 
-function check() {
+function check(isSkipped = false) {
     const q = quizData[currentIndex];
     const isLuki = q.type === 'LUKI';
     const lukiSelects = isLuki ? document.querySelectorAll('.luka-select') : [];
 
-    if (q.type !== 'OPEN' && !isLuki && selectedIndices.length === 0) return;
+    if (!isSkipped) {
+        if (q.type !== 'OPEN' && !isLuki && selectedIndices.length === 0) return;
 
-    if (isLuki) {
-        let allAnswered = true;
-        lukiSelects.forEach(s => { if (!s.value) allAnswered = false; });
-        if (!allAnswered) {
-            messageArea.innerText = "UZUPEŁNIJ WSZYSTKIE LUKI!";
-            messageArea.className = "mb-4 text-center h-4 text-[10px] font-black uppercase tracking-widest text-orange";
-            return;
+        if (isLuki) {
+            let allAnswered = true;
+            lukiSelects.forEach(s => { if (!s.value) allAnswered = false; });
+            if (!allAnswered) {
+                messageArea.innerText = "UZUPEŁNIJ WSZYSTKIE LUKI!";
+                messageArea.className = "mb-4 text-center h-4 text-[10px] font-black uppercase tracking-widest text-orange";
+                return;
+            }
         }
     }
 
     isAnswered = true;
     let isPerfect = false;
 
+    skipBtn.classList.add('hidden');
+    actionBtn.classList.remove('w-2/3', 'py-4');
+    actionBtn.classList.add('w-full', 'py-5');
+
     if (q.type === 'OPEN') {
         const input = document.getElementById('answer-input');
         let userVal = input.value.trim().toLowerCase().replace(/[.,]+$/, '');
         let expectedVal = q.options[0].trim().toLowerCase().replace(/[.,]+$/, '');
-        isPerfect = userVal === expectedVal;
+        isPerfect = isSkipped ? false : (userVal === expectedVal);
         input.disabled = true;
         if (!isPerfect) {
             input.className = isPawelMode
@@ -512,7 +524,7 @@ function check() {
             let userVal = sel.value.trim().toLowerCase();
 
             sel.classList.remove('border-orange');
-            if (expected && userVal === expected) {
+            if (!isSkipped && expected && userVal === expected) {
                 sel.classList.add(isPawelMode ? 'bg-fuchsia-900/40' : 'bg-green-900/40', isPawelMode ? 'border-fuchsia-500' : 'border-green-500', isPawelMode ? 'text-fuchsia-500' : 'text-green-500');
             } else {
                 isPerfect = false;
@@ -521,11 +533,13 @@ function check() {
             }
         });
     } else {
-        isPerfect = JSON.stringify(selectedIndices.sort()) === JSON.stringify(q.correctIndices.sort());
+        const correctArray = Array.isArray(q.correctIndices) ? q.correctIndices : Object.values(q.correctIndices);
+        const optionsList = Array.isArray(q.options) ? q.options : Object.values(q.options);
+        isPerfect = isSkipped ? false : JSON.stringify(selectedIndices.sort()) === JSON.stringify(correctArray.sort());
 
         document.querySelectorAll('.option-btn').forEach((btn, i) => {
             btn.disabled = true;
-            const isCorrect = q.correctIndices.includes(i);
+            const isCorrect = correctArray.includes(i);
             const isSelected = selectedIndices.includes(i);
 
             if (isCorrect && isSelected) {
