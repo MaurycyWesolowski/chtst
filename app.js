@@ -15,7 +15,6 @@ let isPawelMode = localStorage.getItem('pawelMode') === 'true';
 
 // HTML Elements
 const actionBtn = document.getElementById('action-btn');
-const skipBtn = document.getElementById('skip-btn');
 const messageArea = document.getElementById('message-area');
 
 // Auth Form Logic
@@ -105,8 +104,8 @@ onAuthStateChanged(auth, (user) => {
         document.getElementById('quiz-ui').classList.add('hidden');
         document.getElementById('question-screen').classList.add('hidden');
         document.getElementById('nav-controls').classList.add('hidden');
-        const welcomeDiv = document.getElementById('welcome-msg');
-        if (welcomeDiv) welcomeDiv.remove();
+        const nameTag = document.getElementById('student-name-tag');
+        if (nameTag) nameTag.classList.add('hidden');
     }
 });
 
@@ -364,15 +363,12 @@ async function processZipBlob(fileOrBlob) {
     document.getElementById('nav-controls').classList.remove('hidden');
 
     // Info panel
-    const oldWelcome = document.getElementById('welcome-msg');
-    if (oldWelcome) oldWelcome.remove();
-
     const n = currentUser?.displayName || currentUser?.email || "Gość";
-    const welcomeDiv = document.createElement('div');
-    welcomeDiv.id = "welcome-msg";
-    welcomeDiv.className = "text-center mb-6 text-xs text-zinc-500 font-bold uppercase tracking-widest";
-    welcomeDiv.innerHTML = `🎓 STUDENT: <span class="text-orange">${n}</span>`;
-    document.getElementById('main-card').insertBefore(welcomeDiv, document.getElementById('question-screen'));
+    const nameTag = document.getElementById('student-name-tag');
+    if (nameTag) {
+        nameTag.innerText = `🎓 ${n}`;
+        nameTag.classList.remove('hidden');
+    }
 
     processLogic(null);
     render();
@@ -398,8 +394,7 @@ function render() {
     selectedIndices = [];
     messageArea.innerText = "";
     actionBtn.innerText = "Sprawdź";
-    actionBtn.className = "w-2/3 bg-orange text-black py-4 rounded-md font-black uppercase text-sm shadow-lg transition-all active:scale-95";
-    skipBtn.classList.remove('hidden');
+    actionBtn.className = "w-full bg-orange text-black py-4 rounded-md font-black uppercase text-sm shadow-lg transition-all active:scale-95";
 
     document.getElementById('question-text').innerText = q.content;
     document.getElementById('type-tag').innerText = q.type;
@@ -464,10 +459,6 @@ function render() {
         if (!isAnswered) check(false);
         else changeQuestion(1);
     };
-
-    skipBtn.onclick = () => {
-        if (!isAnswered) check(true);
-    };
 }
 
 function handleSelect(idx, btn) {
@@ -484,31 +475,30 @@ function handleSelect(idx, btn) {
     }
 }
 
-function check(isSkipped = false) {
+function check(forceSkip = false) {
     const q = quizData[currentIndex];
     const isLuki = q.type === 'LUKI';
     const lukiSelects = isLuki ? document.querySelectorAll('.luka-select') : [];
 
-    if (!isSkipped) {
-        if (q.type !== 'OPEN' && !isLuki && selectedIndices.length === 0) return;
+    let isSkipped = forceSkip;
 
-        if (isLuki) {
+    if (!isSkipped) {
+        if (q.type !== 'OPEN' && !isLuki && selectedIndices.length === 0) {
+            isSkipped = true;
+        } else if (isLuki) {
             let allAnswered = true;
             lukiSelects.forEach(s => { if (!s.value) allAnswered = false; });
-            if (!allAnswered) {
-                messageArea.innerText = "UZUPEŁNIJ WSZYSTKIE LUKI!";
-                messageArea.className = "mb-4 text-center h-4 text-[10px] font-black uppercase tracking-widest text-orange";
-                return;
-            }
+            if (!allAnswered) isSkipped = true;
+        } else if (q.type === 'OPEN') {
+            const input = document.getElementById('answer-input');
+            if(input.value.trim() === '') isSkipped = true;
         }
     }
 
     isAnswered = true;
     let isPerfect = false;
 
-    skipBtn.classList.add('hidden');
-    actionBtn.classList.remove('w-2/3', 'py-4');
-    actionBtn.classList.add('w-full', 'py-5');
+    actionBtn.className = "w-full bg-zinc-100 text-black py-4 rounded-md font-black uppercase text-sm shadow-xl active:scale-95 transition-all";
 
     if (q.type === 'OPEN') {
         const input = document.getElementById('answer-input');
@@ -581,7 +571,7 @@ function check(isSkipped = false) {
 
     processLogic(isPerfect);
     actionBtn.innerText = "Następny ➡️";
-    actionBtn.className = "w-full bg-zinc-100 text-black py-5 rounded-md font-black uppercase text-sm shadow-xl active:scale-95 transition-all";
+    actionBtn.className = "w-full bg-zinc-100 text-black py-4 rounded-md font-black uppercase text-sm shadow-xl active:scale-95 transition-all";
 }
 
 function processLogic(correct) {
@@ -634,3 +624,6 @@ function changeQuestion(dir) {
 }
 
 document.getElementById('nav-back-btn').addEventListener('click', () => changeQuestion(-1));
+document.getElementById('nav-skip-btn').addEventListener('click', () => {
+    if (!isAnswered) check(true);
+});
