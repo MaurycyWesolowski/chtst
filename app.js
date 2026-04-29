@@ -128,8 +128,11 @@ async function fetchLibrary() {
             let count = 0;
             for (let [dbKey, info] of Object.entries(data)) {
                 count++;
+                const itemDiv = document.createElement('div');
+                itemDiv.className = "flex items-center gap-2 w-full";
+                
                 const btn = document.createElement('button');
-                btn.className = "flex items-center justify-between w-full bg-zinc-900/40 border border-zinc-800 p-4 rounded-xl hover:border-orange transition-all group hover:bg-zinc-800 text-left cursor-pointer";
+                btn.className = "flex-grow flex items-center justify-between bg-zinc-900/40 border border-zinc-800 p-4 rounded-xl hover:border-orange transition-all group hover:bg-zinc-800 text-left cursor-pointer";
                 btn.innerHTML = `
                     <div class="flex items-center gap-3">
                         <span class="text-2xl opacity-60 group-hover:opacity-100 transition-all">📚</span>
@@ -141,7 +144,25 @@ async function fetchLibrary() {
                     document.getElementById('pass-input').value = info.password;
                     document.getElementById('login-btn').click();
                 };
-                libGrid.appendChild(btn);
+                
+                const delBtn = document.createElement('button');
+                delBtn.className = "bg-zinc-900/40 border border-zinc-800 p-4 rounded-xl text-zinc-500 hover:bg-red-900/20 hover:text-red-500 hover:border-red-500 transition-all text-xl cursor-pointer flex items-center justify-center";
+                delBtn.title = "Usuń bazę";
+                delBtn.innerHTML = "🗑️";
+                delBtn.onclick = async () => {
+                    if(confirm("Na pewno chcesz trwale usunąć tę bazę z biblioteki? Twój postęp pozostanie nienaruszony, ale musisz znowu wpisywać hasło żeby się do niego dostać.")) {
+                        try {
+                            await remove(child(ref(db), `users/${currentUser.uid}/unlockedBases/${dbKey}`));
+                            fetchLibrary();
+                        } catch(e) {
+                            console.error(e);
+                        }
+                    }
+                };
+                
+                itemDiv.appendChild(btn);
+                itemDiv.appendChild(delBtn);
+                libGrid.appendChild(itemDiv);
             }
         } else {
             libSection.classList.add('hidden');
@@ -570,14 +591,14 @@ function processLogic(correct) {
             stats.correct++;
             q.currentMastery++;
             if (q.currentMastery === 2 && q.totalErrors === 0) {
-                messageArea.innerText = "ALE LEKKIE ⚡";
+                messageArea.innerText = messageArea.innerText ? `ALE LEKKIE ⚡ | ${messageArea.innerText}` : "ALE LEKKIE ⚡";
                 messageArea.className = `mb-4 text-center h-4 text-[10px] font-black uppercase tracking-widest ${isPawelMode ? 'text-fuchsia-500' : 'text-green-500'}`;
             }
             if (q.currentMastery >= q.requiredMastery) stats.mastered++;
         } else {
             stats.wrong++;
             if (q.currentMastery === 1) {
-                messageArea.innerText = "SYZYF 🪨";
+                messageArea.innerText = messageArea.innerText ? `SYZYF 🪨 | ${messageArea.innerText}` : "SYZYF 🪨";
                 messageArea.className = `mb-4 text-center h-4 text-[10px] font-black uppercase tracking-widest ${isPawelMode ? 'text-red-500' : 'text-red-500'}`;
             }
             q.totalErrors++;
