@@ -320,33 +320,104 @@ async function loadProgressFromCloud() {
 
 async function processZipBlob(fileOrBlob) {
     const zip = await JSZip.loadAsync(fileOrBlob);
-    const files = Object.keys(zip.files).filter(n => n.endsWith('.txt'));
+    const txtFiles = Object.keys(zip.files).filter(n => n.endsWith('.txt'));
+    const jsonFiles = Object.keys(zip.files).filter(n => n.endsWith('.json'));
+
+    if (txtFiles.length === 0 && jsonFiles.length === 0) {
+        alert("BŁĄD: Baza jest pusta lub w złym formacie! ZIP musi zawierać pliki .txt lub .json.");
+        document.getElementById('upload-screen').classList.remove('hidden');
+        document.getElementById('quiz-ui').classList.add('hidden');
+        return;
+    }
 
     // Odczyt po migracji na chmurę zamiast localStorage
     const parsed = await loadProgressFromCloud();
     let tempArray = [];
+    let cloudValid = false;
 
     if (parsed && typeof parsed === 'object' && parsed.stats !== undefined && parsed.data !== undefined) {
-        tempArray = Array.isArray(parsed.data) ? parsed.data : Object.values(parsed.data);
-        stats = parsed.stats;
-        shuffle(tempArray); // Zapewnia brak monotonii! Losuje pozostale po restarcie.
-        console.log("Przywrócono zapisany postęp z CHMURY dla bazy: " + currentDB);
-    } else {
-        // Jeśli nie ma w chmurze, inicjuj na nowo
-        for (let name of files) {
-            const content = await zip.files[name].async("string");
-            let q = parseV3(content);
-            q.idParam = name;
-            q.currentMastery = 0;
-            q.requiredMastery = 2;
-            q.totalErrors = 0;
-            tempArray.push(q);
+        let checkArray = Array.isArray(parsed.data) ? parsed.data : Object.values(parsed.data);
+        if (checkArray.length > 0) {
+            tempArray = checkArray;
+            stats = parsed.stats;
+            shuffle(tempArray); // Zapewnia brak monotonii! Losuje pozostale po restarcie.
+            console.log("Przywrócono zapisany postęp z CHMURY dla bazy: " + currentDB);
+            cloudValid = true;
+        }
+    }
+
+    if (!cloudValid) {
+        // Jeśli nie ma w chmurze lub jest pusty, inicjuj na nowo
+        if (jsonFiles.length > 0) {
+            for (let name of jsonFiles) {
+                const content = await zip.files[name].async("string");
+                const parsedJson = JSON.parse(content);
+                parsedJson.forEach(item => {
+                    let type = "ABCD";
+                    if (!item.opcje || item.opcje.length === 0) type = "OPEN";
+                    else if (item.pytanie.toLowerCase().includes('(luki)')) type = "LUKI";
+                    else if (item.pytanie.toLowerCase().includes('(wybór wielokrotny)')) type = "MULTI";
+
+                    let q = {
+                        idParam: item.nr.toString(),
+                        nr: item.nr.toString(),
+                        content: item.pytanie,
+                        options: item.opcje || [],
+                        currentMastery: 0,
+                        requiredMastery: 2,
+                        totalErrors: 0,
+                        type: type
+                    };
+
+                    if (type === "OPEN") {
+                        q.options = [item.odpowiedz];
+                    } else if (type === "LUKI") {
+                        q.lukiAnswers = item.odpowiedz.split(';').map(s => s.trim());
+                        const correctVals = q.lukiAnswers.map(s => {
+                            let parts = s.split(':');
+                            return parts.length > 1 ? parts.slice(1).join(':').trim() : s;
+                        });
+                        q.options = [...(item.opcje || []), ...correctVals];
+                        q.options = [...new Set(q.options)]; // usuniecie duplikatow
+                        shuffle(q.options);
+                    } else if (type === "MULTI") {
+                        const correctAnsArray = item.odpowiedz.split(';').map(s => s.trim().toLowerCase());
+                        q.correctIndices = [];
+                        q.options.forEach((opt, idx) => {
+                            if (correctAnsArray.includes(opt.trim().toLowerCase())) q.correctIndices.push(idx);
+                        });
+                    } else {
+                        q.correctIndices = [];
+                        q.options.forEach((opt, idx) => {
+                            if (opt.trim().toLowerCase() === item.odpowiedz.trim().toLowerCase()) q.correctIndices.push(idx);
+                        });
+                    }
+                    tempArray.push(q);
+                });
+            }
+        } else {
+            for (let name of txtFiles) {
+                const content = await zip.files[name].async("string");
+                let q = parseV3(content);
+                q.idParam = name;
+                q.currentMastery = 0;
+                q.requiredMastery = 2;
+                q.totalErrors = 0;
+                tempArray.push(q);
+            }
         }
         shuffle(tempArray);
         stats = { correct: 0, wrong: 0, mastered: 0 };
     }
 
     quizData = tempArray;
+
+    if (quizData.length === 0) {
+        alert("BŁĄD: Wygenerowana baza pytań jest pusta! Skontaktuj się z administratorem.");
+        document.getElementById('upload-screen').classList.remove('hidden');
+        document.getElementById('quiz-ui').classList.add('hidden');
+        return;
+    }
 
     // Przeskakuj wymaksowane
     currentIndex = 0;
@@ -389,7 +460,9 @@ function parseV3(text) {
 }
 
 function render() {
+    if (!quizData || quizData.length === 0) return;
     const q = quizData[currentIndex];
+    if (!q) return;
     isAnswered = false;
     selectedIndices = [];
     messageArea.innerText = "";
