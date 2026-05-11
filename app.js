@@ -655,14 +655,14 @@ function processLogic(correct) {
             q.currentMastery++;
             if (q.currentMastery === 2 && q.totalErrors === 0) {
                 messageArea.innerText = messageArea.innerText ? `ALE LEKKIE ⚡ | ${messageArea.innerText}` : "ALE LEKKIE ⚡";
-                messageArea.className = `mb-4 text-center h-4 text-[10px] font-black uppercase tracking-widest ${isPawelMode ? 'text-fuchsia-500' : 'text-green-500'}`;
+                messageArea.className = `mb-6 text-center min-h-4 text-[10px] font-black uppercase tracking-widest transition-all ${isPawelMode ? 'text-fuchsia-500' : 'text-green-500'}`;
             }
             if (q.currentMastery >= q.requiredMastery) stats.mastered++;
         } else {
             stats.wrong++;
             if (q.currentMastery === 1) {
                 messageArea.innerText = messageArea.innerText ? `SYZYF 🪨 | ${messageArea.innerText}` : "SYZYF 🪨";
-                messageArea.className = `mb-4 text-center h-4 text-[10px] font-black uppercase tracking-widest ${isPawelMode ? 'text-red-500' : 'text-red-500'}`;
+                messageArea.className = `mb-6 text-center min-h-4 text-[10px] font-black uppercase tracking-widest transition-all ${isPawelMode ? 'text-red-500' : 'text-red-500'}`;
             }
             q.totalErrors++;
             q.currentMastery = 0;
