@@ -12,6 +12,7 @@ let isAnswered = false;
 let currentUser = null;
 let currentDB = "local";
 let isPawelMode = localStorage.getItem('pawelMode') === 'true';
+let isShuffleAnswers = localStorage.getItem('shuffleAnswers') === 'true';
 
 // HTML Elements
 const actionBtn = document.getElementById('action-btn');
@@ -184,6 +185,22 @@ document.getElementById('nav-reset-btn').addEventListener('click', async () => {
         }
     }
 });
+
+const shuffleBtn = document.getElementById('shuffle-answers-btn');
+function updateShuffleUI() {
+    shuffleBtn.classList.toggle('border-orange', isShuffleAnswers);
+    shuffleBtn.classList.toggle('text-orange', isShuffleAnswers);
+    shuffleBtn.classList.toggle('text-zinc-500', !isShuffleAnswers);
+    shuffleBtn.classList.toggle('border-zinc-800', !isShuffleAnswers);
+}
+if(shuffleBtn) {
+    shuffleBtn.addEventListener('click', () => {
+        isShuffleAnswers = !isShuffleAnswers;
+        localStorage.setItem('shuffleAnswers', isShuffleAnswers);
+        updateShuffleUI();
+    });
+    updateShuffleUI();
+}
 
 const pawelBtn = document.getElementById('pawel-mode-btn');
 function updatePawelUI() {
@@ -519,11 +536,16 @@ function render() {
         document.getElementById('question-text').innerHTML = modifiedContent;
     } else {
         grid.classList.remove('hidden');
-        q.options.forEach((opt, i) => {
+        let displayIndices = q.options.map((_, i) => i);
+        if (isShuffleAnswers) shuffle(displayIndices);
+
+        displayIndices.forEach((origIdx) => {
+            const opt = q.options[origIdx];
             const btn = document.createElement('button');
             btn.className = "option-btn w-full text-left p-5 rounded-lg border border-zinc-900 bg-zinc-900/30 text-xs font-bold transition-all";
             btn.innerText = opt;
-            btn.onclick = () => handleSelect(i, btn);
+            btn.dataset.origIdx = origIdx;
+            btn.onclick = () => handleSelect(origIdx, btn);
             grid.appendChild(btn);
         });
     }
@@ -621,10 +643,11 @@ function check(forceSkip = false) {
         const optionsList = Array.isArray(q.options) ? q.options : Object.values(q.options);
         isPerfect = isSkipped ? false : JSON.stringify(selectedIndices.sort()) === JSON.stringify(correctArray.sort());
 
-        document.querySelectorAll('.option-btn').forEach((btn, i) => {
+        document.querySelectorAll('.option-btn').forEach((btn) => {
+            const origIdx = parseInt(btn.dataset.origIdx);
             btn.disabled = true;
-            const isCorrect = correctArray.includes(i);
-            const isSelected = selectedIndices.includes(i);
+            const isCorrect = correctArray.includes(origIdx);
+            const isSelected = selectedIndices.includes(origIdx);
 
             if (isCorrect && isSelected) {
                 btn.className = isPawelMode
