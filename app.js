@@ -198,6 +198,7 @@ if(shuffleBtn) {
         isShuffleAnswers = !isShuffleAnswers;
         localStorage.setItem('shuffleAnswers', isShuffleAnswers);
         updateShuffleUI();
+        if (typeof render === 'function' && !isAnswered && quizData && quizData.length > 0) render();
     });
     updateShuffleUI();
 }
