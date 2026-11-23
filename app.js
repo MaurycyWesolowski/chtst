@@ -485,7 +485,7 @@ function render() {
     selectedIndices = [];
     messageArea.innerText = "";
     actionBtn.innerText = "Sprawdź";
-    actionBtn.className = "w-full bg-orange text-black py-4 rounded-md font-black uppercase text-sm shadow-lg transition-all active:scale-95";
+    actionBtn.className = "w-full bg-orange text-black py-4 rounded-md font-black uppercase text-sm shadow-lg transition-all active:opacity-80";
 
     document.getElementById('question-text').innerText = q.content;
     document.getElementById('type-tag').innerText = q.type;
@@ -594,7 +594,7 @@ function check(forceSkip = false) {
     isAnswered = true;
     let isPerfect = false;
 
-    actionBtn.className = "w-full bg-zinc-100 text-black py-4 rounded-md font-black uppercase text-sm shadow-xl active:scale-95 transition-all";
+    actionBtn.className = "w-full bg-zinc-100 text-black py-4 rounded-md font-black uppercase text-sm shadow-xl active:opacity-80 transition-all";
 
     if (q.type === 'OPEN') {
         const input = document.getElementById('answer-input');
@@ -668,7 +668,7 @@ function check(forceSkip = false) {
 
     processLogic(isPerfect);
     actionBtn.innerText = "Następny ➡️";
-    actionBtn.className = "w-full bg-zinc-100 text-black py-4 rounded-md font-black uppercase text-sm shadow-xl active:scale-95 transition-all";
+    actionBtn.className = "w-full bg-zinc-100 text-black py-4 rounded-md font-black uppercase text-sm shadow-xl active:opacity-80 transition-all";
 }
 
 function processLogic(correct) {
@@ -681,7 +681,7 @@ function processLogic(correct) {
                 messageArea.innerText = messageArea.innerText ? `ALE LEKKIE ⚡ | ${messageArea.innerText}` : "ALE LEKKIE ⚡";
                 messageArea.className = `mb-6 text-center min-h-4 text-[10px] font-black uppercase tracking-widest transition-all ${isPawelMode ? 'text-fuchsia-500' : 'text-green-500'}`;
             }
-            if (q.currentMastery >= q.requiredMastery) stats.mastered++;
+            stats.mastered = quizData.filter(item => item.currentMastery >= item.requiredMastery).length;
         } else {
             stats.wrong++;
             if (q.currentMastery === 1) {
@@ -691,6 +691,7 @@ function processLogic(correct) {
             q.totalErrors++;
             q.currentMastery = 0;
             q.requiredMastery++;
+            stats.mastered = quizData.filter(item => item.currentMastery >= item.requiredMastery).length;
         }
 
         if (currentUser) {
@@ -708,14 +709,29 @@ function processLogic(correct) {
 }
 
 function changeQuestion(dir) {
-    let next = currentIndex + dir;
-    while (next >= 0 && next < quizData.length && quizData[next].currentMastery >= quizData[next].requiredMastery && stats.mastered < quizData.length) {
-        next += dir;
+    if (!quizData || quizData.length === 0) return;
+
+    const total = quizData.length;
+    stats.mastered = quizData.filter(item => item.currentMastery >= item.requiredMastery).length;
+
+    if (stats.mastered >= total) {
+        alert("LEKKO! Opanowałeś wszystkie chrupki! 🐆🧀");
+        return;
     }
-    if (next >= 0 && next < quizData.length) {
+
+    const step = dir >= 0 ? 1 : -1;
+    let next = (currentIndex + step + total) % total;
+    let checked = 0;
+
+    while (checked < total && quizData[next].currentMastery >= quizData[next].requiredMastery) {
+        next = (next + step + total) % total;
+        checked++;
+    }
+
+    if (checked < total) {
         currentIndex = next;
         render();
-    } else if (stats.mastered >= quizData.length) {
+    } else {
         alert("LEKKO! Opanowałeś wszystkie chrupki! 🐆🧀");
     }
 }
