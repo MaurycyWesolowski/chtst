@@ -13,6 +13,8 @@ let currentUser = null;
 let currentDB = "local";
 let isPawelMode = localStorage.getItem('pawelMode') === 'true';
 let isShuffleAnswers = localStorage.getItem('shuffleAnswers') === 'true';
+let genFilter = localStorage.getItem('genFilter') || 'all'; // 'all' | 'nogen' | 'gen'
+if (!['all', 'nogen', 'gen'].includes(genFilter)) genFilter = 'all';
 
 // HTML Elements
 const actionBtn = document.getElementById('action-btn');
@@ -114,6 +116,8 @@ onAuthStateChanged(auth, (user) => {
         document.getElementById('question-screen').classList.add('hidden');
         document.getElementById('nav-controls').classList.add('hidden');
         setExplanationOpen(false);
+        const genBtnEl = document.getElementById('gen-filter-btn');
+        if (genBtnEl) genBtnEl.classList.add('hidden');
         const nameTag = document.getElementById('student-name-tag');
         if (nameTag) nameTag.classList.add('hidden');
     }
@@ -194,6 +198,76 @@ document.getElementById('nav-reset-btn').addEventListener('click', async () => {
         }
     }
 });
+
+const genFilterBtn = document.getElementById('gen-filter-btn');
+function isGenQuestion(q) {
+    if (!q || !q.content) return false;
+    return /^\s*\(gen\)/i.test(q.content);
+}
+function hasGenSplit() {
+    return quizData && quizData.some(isGenQuestion) && quizData.some(q => !isGenQuestion(q));
+}
+function matchesGenFilter(q) {
+    if (!hasGenSplit() || genFilter === 'all') return true;
+    return genFilter === 'gen' ? isGenQuestion(q) : !isGenQuestion(q);
+}
+function updateGenFilterUI() {
+    if (!genFilterBtn) return;
+    if (!hasGenSplit()) {
+        genFilterBtn.classList.add('hidden');
+        return;
+    }
+    genFilterBtn.classList.remove('hidden');
+    const base = "flex items-center px-3 py-1.5 rounded-full transition-all text-[9px] font-black mr-1 uppercase tracking-widest cursor-pointer border";
+    if (genFilter === 'nogen') {
+        genFilterBtn.innerText = "🎯 BEZ GEN";
+        genFilterBtn.className = `${base} bg-orange/15 border-orange text-orange`;
+    } else if (genFilter === 'gen') {
+        genFilterBtn.innerText = "🤖 TYLKO GEN";
+        genFilterBtn.className = `${base} bg-purple-900/30 border-purple-400 text-purple-300`;
+    } else {
+        genFilterBtn.innerText = "📚 WSZYSTKIE";
+        genFilterBtn.className = `${base} bg-zinc-900 border-zinc-800 text-zinc-400 hover:border-orange`;
+    }
+}
+function findFirstMatchingIndex(startIdx = 0, dir = 1) {
+    if (!quizData || quizData.length === 0) return -1;
+    const total = quizData.length;
+    const step = dir >= 0 ? 1 : -1;
+    let idx = ((startIdx % total) + total) % total;
+    for (let checked = 0; checked < total; checked++) {
+        const item = quizData[idx];
+        if (matchesGenFilter(item) && item.currentMastery < item.requiredMastery) {
+            return idx;
+        }
+        idx = (idx + step + total) % total;
+    }
+    return -1;
+}
+if (genFilterBtn) {
+    genFilterBtn.addEventListener('click', () => {
+        const order = ['all', 'nogen', 'gen'];
+        genFilter = order[(order.indexOf(genFilter) + 1) % order.length];
+        localStorage.setItem('genFilter', genFilter);
+        updateGenFilterUI();
+        if (quizData && quizData.length > 0) {
+            const nextIdx = matchesGenFilter(quizData[currentIndex]) && quizData[currentIndex].currentMastery < quizData[currentIndex].requiredMastery
+                ? currentIndex
+                : findFirstMatchingIndex(0, 1);
+            if (nextIdx !== -1) {
+                currentIndex = nextIdx;
+                processLogic(null);
+                render();
+            } else {
+                const fallbackIdx = quizData.findIndex(matchesGenFilter);
+                if (fallbackIdx !== -1) currentIndex = fallbackIdx;
+                processLogic(null);
+                render();
+                alert("LEKKO! Opanowałeś już wszystkie pytania w tej grupie! 🐆🧀");
+            }
+        }
+    });
+}
 
 const shuffleBtn = document.getElementById('shuffle-answers-btn');
 function updateShuffleUI() {
@@ -580,12 +654,15 @@ async function processZipBlob(fileOrBlob) {
         return;
     }
 
-    // Przeskakuj wymaksowane
-    currentIndex = 0;
-    while (currentIndex < quizData.length && quizData[currentIndex].currentMastery >= quizData[currentIndex].requiredMastery && stats.mastered < quizData.length) {
-        currentIndex++;
+    // Ustaw widoczność przycisku filtra GEN i znajdź pierwsze pasujące nieopanowane pytanie
+    updateGenFilterUI();
+    const firstIdx = findFirstMatchingIndex(0, 1);
+    if (firstIdx !== -1) {
+        currentIndex = firstIdx;
+    } else {
+        const fallbackIdx = quizData.findIndex(matchesGenFilter);
+        currentIndex = fallbackIdx !== -1 ? fallbackIdx : 0;
     }
-    if (currentIndex >= quizData.length) currentIndex = 0;
 
     // Przełączanie Okiem
     document.getElementById('upload-screen').classList.add('hidden');
@@ -870,9 +947,11 @@ function processLogic(correct) {
 
     document.getElementById('stat-correct').innerText = stats.correct;
     document.getElementById('stat-wrong').innerText = stats.wrong;
-    const p = Math.round((stats.mastered / quizData.length) * 100) || 0;
+    const activePool = quizData.filter(matchesGenFilter);
+    const activeMastered = activePool.filter(item => item.currentMastery >= item.requiredMastery).length;
+    const p = Math.round((activeMastered / (activePool.length || 1)) * 100) || 0;
     document.getElementById('mastery-bar').style.width = `${p}%`;
-    document.getElementById('mastery-global').innerText = `${p}%`;
+    document.getElementById('mastery-global').innerText = `${p}% (${activeMastered}/${activePool.length})`;
 }
 
 function changeQuestion(dir) {
@@ -881,21 +960,19 @@ function changeQuestion(dir) {
     const total = quizData.length;
     stats.mastered = quizData.filter(item => item.currentMastery >= item.requiredMastery).length;
 
-    if (stats.mastered >= total) {
-        alert("LEKKO! Opanowałeś wszystkie chrupki! 🐆🧀");
+    const activePool = quizData.filter(matchesGenFilter);
+    const activeMastered = activePool.filter(item => item.currentMastery >= item.requiredMastery).length;
+
+    if (activePool.length > 0 && activeMastered >= activePool.length) {
+        const label = genFilter === 'nogen' ? 'bez GEN' : genFilter === 'gen' ? 'GEN' : 'w bazie';
+        alert(`LEKKO! Opanowałeś wszystkie pytania (${label})! 🐆🧀`);
         return;
     }
 
     const step = dir >= 0 ? 1 : -1;
-    let next = (currentIndex + step + total) % total;
-    let checked = 0;
+    const next = findFirstMatchingIndex(currentIndex + step, step);
 
-    while (checked < total && quizData[next].currentMastery >= quizData[next].requiredMastery) {
-        next = (next + step + total) % total;
-        checked++;
-    }
-
-    if (checked < total) {
+    if (next !== -1) {
         currentIndex = next;
         render();
     } else {
