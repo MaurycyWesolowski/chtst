@@ -10,7 +10,8 @@
 </head>
 <body class="min-h-screen flex flex-col items-center font-sans selection:bg-orange-600">
 
-    <div class="w-full max-w-md px-6 py-8">
+    <div class="w-full flex flex-col lg:flex-row justify-center items-center lg:items-start gap-6 px-4 sm:px-6 py-8">
+    <div class="w-full max-w-md shrink-0">
         <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
             <h1 class="font-bold text-2xl tracking-tighter text-zinc-100 flex items-center gap-1">
                 ch<span class="text-orange">TST</span>
@@ -127,7 +128,11 @@
                 </div>
 
                 <div class="mt-auto">
-                    <div id="message-area" class="mb-6 text-center min-h-4 text-[10px] font-black uppercase tracking-widest transition-all"></div>
+                    <div id="message-area" class="mb-4 text-center min-h-4 text-[10px] font-black uppercase tracking-widest transition-all"></div>
+                    <button id="explanation-btn" class="hidden w-full mb-3 border border-zinc-800 bg-zinc-900/60 text-zinc-300 py-2.5 px-4 rounded-md font-bold uppercase text-xs tracking-wider hover:border-orange hover:text-orange transition-all flex items-center justify-center gap-2 cursor-pointer">
+                        <span>💡</span>
+                        <span id="explanation-btn-label">Wyjaśnienie</span>
+                    </button>
                     <button id="action-btn" class="w-full bg-orange text-black py-4 rounded-md font-black uppercase text-sm shadow-lg active:opacity-80 transition-all">
                         Sprawdź
                     </button>
@@ -158,6 +163,23 @@
                 WYLOGUJ KONTO Z URZĄDZENIA
             </button>
         </div>
+    </div>
+
+    <!-- PANEL WYJAŚNIENIA (OBOK KARTY NA DESKTOPIE, POD SPODEM NA TELEFONIE) -->
+    <aside id="explanation-panel" class="hidden w-full max-w-md lg:w-96 lg:mt-[114px] bg-zinc-950 rounded-xl p-6 shadow-2xl border border-orange/30 orange-glow slide-in-side shrink-0">
+        <div class="flex items-start justify-between gap-3 pb-4 mb-4 border-b border-zinc-900">
+            <div>
+                <div class="flex items-center gap-2">
+                    <span class="text-base">💡</span>
+                    <h3 class="text-xs font-black uppercase tracking-widest text-orange">Wyjaśnienie</h3>
+                    <span id="explanation-nr" class="text-[9px] font-bold text-zinc-500 border border-zinc-800 px-2 py-0.5 rounded uppercase"></span>
+                </div>
+                <p id="explanation-category" class="hidden mt-2 text-[10px] font-bold uppercase tracking-wider text-zinc-500 leading-snug"></p>
+            </div>
+            <button id="explanation-close-btn" class="text-zinc-500 hover:text-zinc-100 text-sm font-black px-2 py-1 rounded hover:bg-zinc-900 transition-all cursor-pointer" title="Zamknij wyjaśnienie">✕</button>
+        </div>
+        <div id="explanation-content" class="text-sm leading-relaxed text-zinc-300 space-y-3 max-h-[60vh] overflow-y-auto pr-1 custom-scroll"></div>
+    </aside>
     </div>
 
     <script type="module" src="app.js"></script>

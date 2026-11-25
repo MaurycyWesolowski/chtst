@@ -17,6 +17,14 @@ let isShuffleAnswers = localStorage.getItem('shuffleAnswers') === 'true';
 // HTML Elements
 const actionBtn = document.getElementById('action-btn');
 const messageArea = document.getElementById('message-area');
+const explanationPanel = document.getElementById('explanation-panel');
+const explanationBtn = document.getElementById('explanation-btn');
+const explanationBtnLabel = document.getElementById('explanation-btn-label');
+const explanationContent = document.getElementById('explanation-content');
+const explanationCategory = document.getElementById('explanation-category');
+const explanationNr = document.getElementById('explanation-nr');
+const explanationCloseBtn = document.getElementById('explanation-close-btn');
+let isExplanationOpen = false;
 
 // Auth Form Logic
 let isRegisterMode = false;
@@ -105,6 +113,7 @@ onAuthStateChanged(auth, (user) => {
         document.getElementById('quiz-ui').classList.add('hidden');
         document.getElementById('question-screen').classList.add('hidden');
         document.getElementById('nav-controls').classList.add('hidden');
+        setExplanationOpen(false);
         const nameTag = document.getElementById('student-name-tag');
         if (nameTag) nameTag.classList.add('hidden');
     }
@@ -215,8 +224,104 @@ pawelBtn.addEventListener('click', () => {
     isPawelMode = !isPawelMode;
     localStorage.setItem('pawelMode', isPawelMode);
     updatePawelUI();
+    if (quizData && quizData[currentIndex]) {
+        refreshExplanationTheme(quizData[currentIndex]);
+    }
 });
 updatePawelUI(); // Init
+
+// Obsługa panelu Wyjaśnienia
+function escapeHtml(str) {
+    return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
+function formatExplanation(rawText) {
+    if (!rawText) return '';
+    const accentCode = isPawelMode
+        ? 'text-cyan-400 border-cyan-900/50 bg-cyan-950/30'
+        : 'text-orange border-zinc-800 bg-zinc-900';
+
+    const applyInline = (line) => {
+        let html = escapeHtml(line);
+        html = html.replace(/`([^`]+)`/g, `<code class="px-1.5 py-0.5 rounded border font-mono text-xs ${accentCode}">$1</code>`);
+        html = html.replace(/\*\*([^*]+)\*\*/g, '<strong class="text-zinc-100 font-bold">$1</strong>');
+        html = html.replace(/\*([^*]+)\*/g, '<em class="text-zinc-400 italic">$1</em>');
+        return html;
+    };
+
+    const blocks = String(rawText).trim().split(/\n\s*\n/);
+    return blocks.map(block => {
+        const lines = block.split('\n').map(l => l.trim()).filter(Boolean);
+        const isList = lines.length > 0 && lines.every(l => /^[-•*]\s+/.test(l));
+        if (isList) {
+            const items = lines.map(l => `<li class="pl-1">${applyInline(l.replace(/^[-•*]\s+/, ''))}</li>`).join('');
+            return `<ul class="list-disc list-inside space-y-1.5 text-zinc-300">${items}</ul>`;
+        }
+        return `<p class="leading-relaxed">${lines.map(applyInline).join('<br>')}</p>`;
+    }).join('');
+}
+
+function refreshExplanationTheme(q) {
+    if (!explanationPanel || !explanationBtn) return;
+    if (isPawelMode) {
+        explanationPanel.classList.remove('border-orange/30', 'orange-glow');
+        explanationPanel.classList.add('border-cyan-400/40', 'shadow-[0_0_25px_rgba(34,211,238,0.12)]');
+    } else {
+        explanationPanel.classList.remove('border-cyan-400/40', 'shadow-[0_0_25px_rgba(34,211,238,0.12)]');
+        explanationPanel.classList.add('border-orange/30', 'orange-glow');
+    }
+    const titleEl = explanationPanel.querySelector('h3');
+    if (titleEl) {
+        titleEl.className = `text-xs font-black uppercase tracking-widest ${isPawelMode ? 'text-cyan-400' : 'text-orange'}`;
+    }
+    if (q && q.explanation && explanationContent) {
+        explanationContent.innerHTML = formatExplanation(q.explanation);
+    }
+    updateExplanationBtnStyle();
+}
+
+function updateExplanationBtnStyle() {
+    if (!explanationBtn) return;
+    const base = "w-full mb-3 border py-2.5 px-4 rounded-md font-bold uppercase text-xs tracking-wider transition-all flex items-center justify-center gap-2 cursor-pointer";
+    const hiddenClass = explanationBtn.classList.contains('hidden') ? ' hidden' : '';
+    if (isExplanationOpen) {
+        explanationBtn.className = isPawelMode
+            ? `${base} border-cyan-400 bg-cyan-950/30 text-cyan-300${hiddenClass}`
+            : `${base} border-orange bg-orange/10 text-orange${hiddenClass}`;
+        if (explanationBtnLabel) explanationBtnLabel.innerText = "Ukryj wyjaśnienie";
+    } else {
+        explanationBtn.className = isPawelMode
+            ? `${base} border-zinc-800 bg-zinc-900/60 text-zinc-300 hover:border-cyan-400 hover:text-cyan-400${hiddenClass}`
+            : `${base} border-zinc-800 bg-zinc-900/60 text-zinc-300 hover:border-orange hover:text-orange${hiddenClass}`;
+        if (explanationBtnLabel) explanationBtnLabel.innerText = "Wyjaśnienie";
+    }
+}
+
+function setExplanationOpen(open) {
+    isExplanationOpen = Boolean(open);
+    if (!explanationPanel) return;
+    explanationPanel.classList.toggle('hidden', !isExplanationOpen);
+    updateExplanationBtnStyle();
+}
+
+if (explanationBtn) {
+    explanationBtn.addEventListener('click', () => {
+        const q = quizData[currentIndex];
+        if (!q || !q.explanation) return;
+        setExplanationOpen(!isExplanationOpen);
+    });
+}
+if (explanationCloseBtn) {
+    explanationCloseBtn.addEventListener('click', () => setExplanationOpen(false));
+}
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && isExplanationOpen) setExplanationOpen(false);
+});
 
 // Dekonstrukcja Bazy Ograniczonej z Githuba
 document.getElementById('login-btn').addEventListener('click', async () => {
@@ -358,6 +463,29 @@ async function processZipBlob(fileOrBlob) {
         if (checkArray.length > 0) {
             tempArray = checkArray;
             stats = parsed.stats;
+            // Jeśli w aktualnym pliku ZIP są wyjaśnienia/kategorie, uzupełnij je dla wczytanego postępu
+            if (jsonFiles.length > 0) {
+                const metaByNr = {};
+                for (let name of jsonFiles) {
+                    const content = await zip.files[name].async("string");
+                    const parsedJson = JSON.parse(content);
+                    parsedJson.forEach(item => {
+                        if (item.nr !== undefined) {
+                            metaByNr[item.nr.toString()] = {
+                                explanation: item.wyjasnienie || item.explanation || "",
+                                category: item.kategoria || item.dzial || ""
+                            };
+                        }
+                    });
+                }
+                tempArray.forEach(q => {
+                    const meta = metaByNr[String(q.nr)];
+                    if (meta) {
+                        if (meta.explanation) q.explanation = meta.explanation;
+                        if (meta.category) q.category = meta.category;
+                    }
+                });
+            }
             shuffle(tempArray); // Zapewnia brak monotonii! Losuje pozostale po restarcie.
             console.log("Przywrócono zapisany postęp z CHMURY dla bazy: " + currentDB);
             cloudValid = true;
@@ -381,6 +509,8 @@ async function processZipBlob(fileOrBlob) {
                         nr: item.nr.toString(),
                         content: item.pytanie,
                         options: item.opcje || [],
+                        explanation: item.wyjasnienie || item.explanation || "",
+                        category: item.kategoria || item.dzial || "",
                         currentMastery: 0,
                         requiredMastery: 2,
                         totalErrors: 0,
@@ -465,14 +595,19 @@ async function processZipBlob(fileOrBlob) {
 
 function parseV3(text) {
     const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+    const trescIdx = lines.indexOf('TRESC:');
+    const wyjIdx = lines.indexOf('WYJASNIENIE:');
+    const optionsEnd = wyjIdx > trescIdx ? wyjIdx : lines.length;
     return {
         type: lines.find(l => l.startsWith('TYP:'))?.split(': ')[1] || "ABCD",
         nr: lines.find(l => l.startsWith('NR:'))?.split(': ')[1] || "?",
         content: lines.find(l => l.startsWith('PYTANIE:'))?.replace('PYTANIE: ', ''),
-        options: lines.slice(lines.indexOf('TRESC:') + 1),
+        options: trescIdx !== -1 ? lines.slice(trescIdx + 1, optionsEnd) : [],
+        explanation: wyjIdx !== -1 ? lines.slice(wyjIdx + 1).join('\n') : "",
+        category: lines.find(l => l.startsWith('KATEGORIA:'))?.replace('KATEGORIA: ', '') || "",
         correctIndices: lines[0].substring(1).split('').map((v, i) => v === '1' ? i : null).filter(v => v !== null),
         lukiAnswers: lines.includes('LUKI_ANSWERS:')
-            ? lines.slice(lines.indexOf('LUKI_ANSWERS:') + 1, lines.indexOf('TRESC:'))
+            ? lines.slice(lines.indexOf('LUKI_ANSWERS:') + 1, trescIdx)
             : []
     };
 }
@@ -490,6 +625,25 @@ function render() {
     document.getElementById('question-text').innerText = q.content;
     document.getElementById('type-tag').innerText = q.type;
     document.getElementById('question-nr').innerText = `ID: ${q.nr}`;
+
+    // Reset i przygotowanie panelu Wyjaśnienia
+    setExplanationOpen(false);
+    if (explanationBtn) {
+        const hasExplanation = Boolean(q.explanation && q.explanation.trim().length > 0);
+        explanationBtn.classList.toggle('hidden', !hasExplanation);
+        if (hasExplanation) {
+            if (explanationNr) explanationNr.innerText = `ID: ${q.nr}`;
+            if (explanationCategory) {
+                if (q.category && q.category.trim().length > 0) {
+                    explanationCategory.innerText = q.category;
+                    explanationCategory.classList.remove('hidden');
+                } else {
+                    explanationCategory.classList.add('hidden');
+                }
+            }
+            refreshExplanationTheme(q);
+        }
+    }
 
     const dots = document.getElementById('mastery-dots');
     dots.innerHTML = '';

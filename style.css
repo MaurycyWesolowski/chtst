@@ -7,3 +7,9 @@ body { background-color: #050505; color: #e5e5e5; -webkit-tap-highlight-color: t
 .option-btn.selected { border-color: #71717a; background-color: rgba(113, 113, 122, 0.2); color: #e4e4e7; }
 .fade-in { animation: fadeIn 0.3s ease-out; }
 @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+.slide-in-side { animation: slideInSide 0.25s ease-out; }
+@keyframes slideInSide { from { opacity: 0; transform: translateX(12px); } to { opacity: 1; transform: translateX(0); } }
+.custom-scroll::-webkit-scrollbar { width: 5px; }
+.custom-scroll::-webkit-scrollbar-track { background: #09090b; border-radius: 999px; }
+.custom-scroll::-webkit-scrollbar-thumb { background: #27272a; border-radius: 999px; }
+.custom-scroll::-webkit-scrollbar-thumb:hover { background: #FF6B00; }
