@@ -546,10 +546,30 @@ async function processZipBlob(fileOrBlob) {
                     totalFreshCount += parsedJson.length;
                     parsedJson.forEach(item => {
                         if (item.nr !== undefined) {
+                            let freshCorrect = null;
+                            if (Array.isArray(item.opcje) && item.opcje.length > 0 && typeof item.odpowiedz === 'string') {
+                                const isMulti = (item.pytanie || '').toLowerCase().includes('(wybór wielokrotny)');
+                                const isLuki = (item.pytanie || '').toLowerCase().includes('(luki)');
+                                if (!isLuki) {
+                                    freshCorrect = [];
+                                    if (isMulti) {
+                                        const arr = item.odpowiedz.split(';').map(s => s.trim().toLowerCase());
+                                        item.opcje.forEach((opt, idx) => {
+                                            if (arr.includes(opt.trim().toLowerCase())) freshCorrect.push(idx);
+                                        });
+                                    } else {
+                                        const ans = item.odpowiedz.trim().toLowerCase();
+                                        item.opcje.forEach((opt, idx) => {
+                                            if (opt.trim().toLowerCase() === ans) freshCorrect.push(idx);
+                                        });
+                                    }
+                                }
+                            }
                             metaByNr[item.nr.toString()] = {
                                 content: item.pytanie || "",
                                 explanation: item.wyjasnienie || item.explanation || "",
-                                category: item.kategoria || item.dzial || ""
+                                category: item.kategoria || item.dzial || "",
+                                correctIndices: freshCorrect
                             };
                         }
                     });
@@ -565,6 +585,14 @@ async function processZipBlob(fileOrBlob) {
                             if (meta.content) q.content = meta.content;
                             if (meta.explanation) q.explanation = meta.explanation;
                             if (meta.category) q.category = meta.category;
+                            if (meta.correctIndices && meta.correctIndices.length > 0 && q.type !== 'OPEN' && q.type !== 'LUKI') {
+                                const oldArr = Array.isArray(q.correctIndices) ? [...q.correctIndices].sort() : Object.values(q.correctIndices || {}).sort();
+                                const newArr = [...meta.correctIndices].sort();
+                                if (JSON.stringify(oldArr) !== JSON.stringify(newArr)) {
+                                    q.correctIndices = meta.correctIndices;
+                                    q.currentMastery = 0; // reset mastery tylko dla pytania, któremu zmieniono klucz
+                                }
+                            }
                         }
                     });
                 }
