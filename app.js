@@ -461,14 +461,15 @@ async function processZipBlob(fileOrBlob) {
     if (parsed && typeof parsed === 'object' && parsed.stats !== undefined && parsed.data !== undefined) {
         let checkArray = Array.isArray(parsed.data) ? parsed.data : Object.values(parsed.data);
         if (checkArray.length > 0) {
-            tempArray = checkArray;
-            stats = parsed.stats;
-            // Jeśli w aktualnym pliku ZIP są wyjaśnienia/kategorie, uzupełnij je dla wczytanego postępu
+            let dbReplaced = false;
+            // Jeśli w aktualnym pliku ZIP są pliki JSON, sprawdź czy baza nie została podmieniona oraz zsynchronizuj treści/wyjaśnienia
             if (jsonFiles.length > 0) {
                 const metaByNr = {};
+                let totalFreshCount = 0;
                 for (let name of jsonFiles) {
                     const content = await zip.files[name].async("string");
                     const parsedJson = JSON.parse(content);
+                    totalFreshCount += parsedJson.length;
                     parsedJson.forEach(item => {
                         if (item.nr !== undefined) {
                             metaByNr[item.nr.toString()] = {
@@ -479,18 +480,28 @@ async function processZipBlob(fileOrBlob) {
                         }
                     });
                 }
-                tempArray.forEach(q => {
-                    const meta = metaByNr[String(q.nr)];
-                    if (meta) {
-                        if (meta.content) q.content = meta.content;
-                        if (meta.explanation) q.explanation = meta.explanation;
-                        if (meta.category) q.category = meta.category;
-                    }
-                });
+                const matchedCount = checkArray.filter(q => metaByNr[String(q.nr)]).length;
+                if (matchedCount === 0 || checkArray.length !== totalFreshCount) {
+                    console.log("Wykryto nową wersję bazy (inna liczba lub ID pytań) — ładuję świeżą bazę z pliku.");
+                    dbReplaced = true;
+                } else {
+                    checkArray.forEach(q => {
+                        const meta = metaByNr[String(q.nr)];
+                        if (meta) {
+                            if (meta.content) q.content = meta.content;
+                            if (meta.explanation) q.explanation = meta.explanation;
+                            if (meta.category) q.category = meta.category;
+                        }
+                    });
+                }
             }
-            shuffle(tempArray); // Zapewnia brak monotonii! Losuje pozostale po restarcie.
-            console.log("Przywrócono zapisany postęp z CHMURY dla bazy: " + currentDB);
-            cloudValid = true;
+            if (!dbReplaced) {
+                tempArray = checkArray;
+                stats = parsed.stats;
+                shuffle(tempArray); // Zapewnia brak monotonii! Losuje pozostale po restarcie.
+                console.log("Przywrócono zapisany postęp z CHMURY dla bazy: " + currentDB);
+                cloudValid = true;
+            }
         }
     }
 
