@@ -472,6 +472,7 @@ async function processZipBlob(fileOrBlob) {
                     parsedJson.forEach(item => {
                         if (item.nr !== undefined) {
                             metaByNr[item.nr.toString()] = {
+                                content: item.pytanie || "",
                                 explanation: item.wyjasnienie || item.explanation || "",
                                 category: item.kategoria || item.dzial || ""
                             };
@@ -481,6 +482,7 @@ async function processZipBlob(fileOrBlob) {
                 tempArray.forEach(q => {
                     const meta = metaByNr[String(q.nr)];
                     if (meta) {
+                        if (meta.content) q.content = meta.content;
                         if (meta.explanation) q.explanation = meta.explanation;
                         if (meta.category) q.category = meta.category;
                     }
